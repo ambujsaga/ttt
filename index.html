@@ -283,6 +283,10 @@
                     </svg>
                 </button>
                 
+                <button class="icon-btn" id="btn-notification" title="Notifications" style="position: relative; font-size: 1.4rem;">
+                    🔔
+                    <span id="notif-badge" class="hidden" style="position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; border: 2px solid #fff;"></span>
+                </button>
                 <button class="icon-btn hidden" id="btn-edit" title="Edit Mode" style="font-size: 1.4rem;">✏️</button>
                 <button class="icon-btn hidden" id="btn-settings" title="Settings" style="font-size: 1.4rem;">⚙️</button>
             </div>
@@ -299,6 +303,15 @@
         <button id="add-btn" class="hidden">+</button>
     </div>
 
+    <div id="notification-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px; padding-top: 15px;">
+            <button id="btn-close-notification" class="modal-cross-btn" title="Close" style="top: 15px;">&times;</button>
+            <h3 style="margin-top: 5px; margin-bottom: 20px; color: var(--primary); text-align: center;">Notifications</h3>
+            
+            <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                </div>
+        </div>
+    </div>
     <div id="app-modal" class="modal hidden">
         <div class="modal-content">
             <h3 id="modal-title" style="margin-top: 0; color: var(--primary);">Add New Link</h3>
@@ -827,6 +840,110 @@
                 } else {
                     icon.style.display = 'none'; // Chhupao
                 }
+            });
+        }
+        
+        // ==========================================
+        // 11. NOTIFICATIONS FEATURE LOGIC (VIEWER ONLY)
+        // ==========================================
+        const btnNotification = document.getElementById('btn-notification');
+        const notifBadge = document.getElementById('notif-badge');
+        const notificationModal = document.getElementById('notification-modal');
+        const btnCloseNotification = document.getElementById('btn-close-notification');
+        const notifList = document.getElementById('notif-list');
+
+        // LocalStorage se last seen time read karna
+        let seenTimestamp = parseInt(localStorage.getItem('t3_last_seen_notif') || '0');
+        let latestNotifTimestamp = 0;
+
+        // Firebase Listener for Notifications
+        const notifRef = ref(db, 'system_notifications');
+        onValue(notifRef, (snapshot) => {
+            notifList.innerHTML = '';
+            let hasNewData = false;
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                // Naye messages sabse upar dikhane ke liye sort reverse
+                const sortedKeys = Object.keys(data).sort((a, b) => data[b].timestamp - data[a].timestamp);
+                
+                if (sortedKeys.length > 0) {
+                    latestNotifTimestamp = data[sortedKeys[0]].timestamp;
+                    if (latestNotifTimestamp > seenTimestamp) {
+                        hasNewData = true;
+                    }
+                }
+
+                sortedKeys.forEach(key => {
+                    const notif = data[key];
+                    const div = document.createElement('div');
+                    
+                    // T3 aesthetic ke hisab se styling
+                    div.style.background = '#f8f9fc';
+                    div.style.padding = '15px';
+                    div.style.borderRadius = '12px';
+                    div.style.position = 'relative';
+                    div.style.border = '1px solid #dcdcdc';
+                    div.style.borderLeft = '4px solid var(--primary)';
+                    div.style.boxShadow = 'var(--shadow-sm)';
+                    
+                    let contentHtml = `<p style="margin: 0 0 8px 0; font-size: 0.95rem; color: var(--text-color);">${notif.text}</p>`;
+                    if (notif.link) {
+                        contentHtml += `<a href="${notif.link}" target="_blank" style="color: var(--primary); font-size: 0.9rem; word-break: break-all; text-decoration: none; font-weight: 500;">🔗 ${notif.link}</a>`;
+                    }
+                    
+                    div.innerHTML = contentHtml;
+                    notifList.appendChild(div);
+                });
+            } else {
+                notifList.innerHTML = '<p style="color: #6c757d; text-align: center; margin-top: 20px;">No notifications yet.</p>';
+            }
+
+            // Agar notification page hidden hai aur naya notice aya hai toh Red Dot Show karo
+            if (hasNewData && notificationModal.classList.contains('hidden')) {
+                notifBadge.classList.remove('hidden');
+            }
+        });
+
+        // Open Notification Modal & Hide Red Dot
+        btnNotification.addEventListener('click', () => {
+            notificationModal.classList.remove('hidden');
+            notifBadge.classList.add('hidden');
+            
+            // Mark as seen in LocalStorage
+            seenTimestamp = Date.now();
+            localStorage.setItem('t3_last_seen_notif', seenTimestamp.toString());
+        });
+
+        // Close Notification Modal
+        btnCloseNotification.addEventListener('click', () => {
+            notificationModal.classList.add('hidden');
+        });
+
+        // ==========================================
+        // 12. HIDDEN EASTER EGG (5 Taps on Header Logo)
+        // ==========================================
+        const headerLogo = document.querySelector('.header-left img');
+        if (headerLogo) {
+            // Sirf dikhne ke liye ki clickable hai, koi external visual change nahi
+            headerLogo.style.cursor = 'pointer'; 
+            let tapCount = 0;
+            let tapTimeout;
+
+            headerLogo.addEventListener('click', () => {
+                tapCount++;
+                clearTimeout(tapTimeout);
+
+                if (tapCount === 5) {
+                    // YAHAN APNA SECRET LINK REPLACE KARO
+                    window.open('https://www.google.com', '_blank'); 
+                    tapCount = 0; // Ek baar khulne ke baad reset
+                }
+
+                // Agar lagataar tap nahi kiya (1 second ka gap ho gaya) toh reset ho jayega
+                tapTimeout = setTimeout(() => {
+                    tapCount = 0;
+                }, 1000);
             });
         }
 
