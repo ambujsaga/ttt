@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thejaya Panel</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --primary: #007bff;
+            --danger: #dc3545;
+            --success: #28a745;
+        }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); }
+        
+        /* Utility */
+        .hidden { display: none !important; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-primary { background: var(--primary); }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 5px; border: none; }
+        
+        /* Screens */
+        #login-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #login-box { background: var(--panel-bg); padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
+        
+        /* Main Panel */
+        #main-panel { display: flex; flex-direction: column; height: 100vh; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--panel-bg); }
+        .header-left, .header-right { display: flex; gap: 15px; align-items: center; }
+        .header-title { font-size: 1.2rem; font-weight: bold; }
+        .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        .edit-active { color: #ffc107; }
+
+        /* Grid */
+        #app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 20px; padding: 20px; }
+        .app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; text-align: center; }
+        .app-img { width: 60px; height: 60px; border-radius: 15px; object-fit: cover; background: #333; margin-bottom: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .app-name { font-size: 0.8rem; word-break: break-word; }
+
+        /* Floating Add Button */
+        #add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; font-size: 2rem; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100; }
+
+        /* Modals */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--panel-bg); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-actions { display: flex; justify-content: space-between; margin-top: 15px; gap: 10px; }
+        
+        /* Notice Editor specific styles */
+        .toolbar { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
+        .toolbar button { flex: 1; padding: 8px; font-size: 0.9rem; background: #333; border: 1px solid #555; color: white; border-radius: 5px; cursor: pointer; }
+        #notice-editor { min-height: 150px; background: #121212; padding: 10px; border-radius: 5px; outline: none; border: 1px solid #333; max-height: 250px; overflow-y: auto; }
+        #notice-editor img, #viewer-content img { max-width: 100%; border-radius: 5px; margin: 10px 0; display: block; }
+        #notice-editor a, #viewer-content a { color: var(--primary); word-break: break-all; }
+        #viewer-content { margin-bottom: 20px; font-size: 1rem; line-height: 1.5; }
+
+        /* New styles for updates */
+        .notice-img-container { position: relative; display: block; margin: 10px 0; }
+        .del-img-btn { position: absolute; top: 8px; right: 8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        #viewer-content .del-img-btn { display: none !important; }
+        .modal-cross-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 0; transition: color 0.2s; }
+        .modal-cross-btn:hover { color: #fff; }
+
+        /* --- SLIDER CSS --- */
+        #slider-container { width: 100%; aspect-ratio: 16/9; max-height: 250px; background: #000; position: relative; overflow: hidden; display: none; }
+        #slider-track { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        #slider-track::-webkit-scrollbar { display: none; }
+        .slide { flex: 0 0 100%; height: 100%; scroll-snap-align: center; position: relative; display: flex; align-items: center; justify-content: center; background: #1a1a1a; border-right: 1px solid #333;}
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        .slide-edit-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; z-index: 10; }
+        .empty-slide-text { color: #888; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div id="login-box">
+            <h2>Thejaya Panel</h2>
+            <p>Enter 8-digit password</p>
+            <input type="password" id="login-pass" maxlength="8" placeholder="********">
+            <button class="btn btn-primary" id="btn-login" style="width: 100%;">Open Panel</button>
+        </div>
+    </div>
+
+    <div id="main-panel" class="hidden">
+        <header>
+            <div class="header-left">
+                <button class="icon-btn" id="btn-back">⬅</button>
+                <span class="header-title">Thejaya Panel</span>
+            </div>
+            <div class="header-right">
+                <input type="text" id="search-bar" class="hidden" placeholder="Search apps..." style="padding: 6px 12px; border-radius: 20px; border: none; width: 150px; font-size: 0.9rem; color: #000; outline: none; margin: 0;">
+                <button class="icon-btn" id="btn-search" title="Search">🔍</button>
+                <button class="icon-btn" id="btn-edit" title="Edit Mode">✏️</button>
+                
+                <!-- NEW NOTIFICATION ICON -->
+                <button class="icon-btn" id="btn-notification" title="Notifications" style="position: relative;">
+                    🔔
+                    <span id="notif-badge" class="hidden" style="position: absolute; top: 0px; right: 0px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%;"></span>
+                </button>
+                <!-- /NEW NOTIFICATION ICON -->
+                
+                <button class="icon-btn" id="btn-settings" title="Settings">⚙️</button>
+            </div>
+        </header>
+
+        <div id="slider-container">
+            <div id="slider-track"></div>
+            <input type="file" id="slider-img-input" accept="image/*" class="hidden">
+        </div>
+
+        <div id="app-grid">
+            </div>
+
+        <button id="add-btn">+</button>
+    </div>
+
+    <div id="app-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Add New Link</h3>
+            <input type="hidden" id="app-id">
+            <input type="file" id="app-photo" accept="image/*">
+            <img id="preview-img" style="width: 60px; height: 60px; border-radius: 10px; display: none; margin: 10px 0;">
+            <input type="text" id="app-name" placeholder="App Name (e.g., YouTube)">
+            <input type="url" id="app-link" placeholder="Final Link (e.g., https://youtube.com)">
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="btn-delete" class="hidden">Delete</button>
+                <button class="btn" id="btn-cancel-app" style="background:#555;">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-app">Next (Notice)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notice-builder-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>Create/Edit Notice</h3>
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 0;">Type text, or insert images/links below.</p>
+            
+            <div class="toolbar">
+                <button id="btn-notice-img">📷 Add Image</button>
+                <button id="btn-notice-link">🔗 Add Link</button>
+                <input type="file" id="notice-img-input" accept="image/*" class="hidden">
+            </div>
+            
+            <div id="notice-editor" contenteditable="true" placeholder="Write notice here..."></div>
+            
+            <div class="modal-actions">
+                <button class="btn" id="btn-cancel-notice" style="background:#555;">Back</button>
+                <button class="btn btn-success" id="btn-save-final" style="flex: 1; margin-left: 10px;">Save & Publish</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notice-viewer-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <button id="btn-close-viewer" class="modal-cross-btn" title="Close">&times;</button>
+            <h3 id="viewer-title" style="text-align: center; margin-top: 0; padding-right: 25px;">Notice</h3>
+            
+            <div id="viewer-content"></div>
+            
+            <button id="viewer-link-btn" class="btn btn-primary" style="width: 100%; font-size: 1.2rem; padding: 15px; margin-top: 15px;">Open Final Link</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Change Password</h3>
+            <input type="email" id="set-email" placeholder="Email Address">
+            <input type="password" id="set-old-pass" placeholder="Old Password">
+            <input type="password" id="set-new-pass" maxlength="8" placeholder="New 8-digit Password">
+            <div class="modal-actions">
+                <button class="btn" id="btn-cancel-settings" style="background:#555;">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-settings">Update</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NEW NOTIFICATION MODAL -->
+    <div id="notification-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px; padding-top: 10px;">
+            <button id="btn-close-notification" class="modal-cross-btn" title="Close" style="top: 10px;">&times;</button>
+            <h3 style="margin-top: 10px; margin-bottom: 20px;">Notifications</h3>
+            
+            <button id="btn-toggle-add-notif" class="btn btn-primary" style="width: 100%; margin-bottom: 15px;">+ Add Notification</button>
+            
+            <div id="add-notif-section" class="hidden" style="margin-bottom: 20px; background: #2a2a2a; padding: 15px; border-radius: 8px;">
+                <textarea id="notif-text" placeholder="Write notification here..." style="width: 100%; padding: 10px; border-radius: 5px; border: none; box-sizing: border-box; resize: vertical; min-height: 80px; margin-bottom: 10px; background: #121212; color: white;"></textarea>
+                <input type="url" id="notif-link" placeholder="Optional Link (e.g. https://...)" style="margin-bottom: 10px; background: #121212; color: white;">
+                <button class="btn btn-success" id="btn-save-notif" style="width: 100%;">Done</button>
+            </div>
+            
+            <div id="notif-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
+                <!-- Notifications load here dynamically -->
+            </div>
+        </div>
+    </div>
+    <!-- /NEW NOTIFICATION MODAL -->
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOdF10p3WVV5XDE8jnzttzw3VnZJU-bXU",
+            authDomain: "game-b37ee.firebaseapp.com",
+            databaseURL: "https://game-b37ee-default-rtdb.firebaseio.com",
+            projectId: "game-b37ee",
+            storageBucket: "game-b37ee.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentPassword = "12345678"; 
+        let isEditMode = false;
+        let base64Image = "";
+        let tempAppData = {}; 
+
+        const loginScreen = document.getElementById('login-screen');
+        const mainPanel = document.getElementById('main-panel');
+        const appGrid = document.getElementById('app-grid');
+        
+        const passRef = ref(db, 'admin/password');
+        get(passRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                currentPassword = snapshot.val();
+            } else {
+                set(passRef, "12345678"); 
+            }
+        });
+
+        // 1. LOGIN LOGIC
+        document.getElementById('btn-login').addEventListener('click', () => {
+            const inputPass = document.getElementById('login-pass').value;
+            if(inputPass === currentPassword && inputPass.length === 8) {
+                loginScreen.classList.add('hidden');
+                mainPanel.classList.remove('hidden');
+                loadApps();
+            } else {
+                alert("Incorrect Password or not 8 digits!");
+            }
+        });
+
+        // 2. BACK BUTTON
+        document.getElementById('btn-back').addEventListener('click', () => {
+            mainPanel.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            document.getElementById('login-pass').value = '';
+        });
+
+        // 3. EDIT MODE TOGGLE
+        document.getElementById('btn-edit').addEventListener('click', (e) => {
+            isEditMode = !isEditMode;
+            e.target.classList.toggle('edit-active');
+            if(isEditMode) {
+                alert("Edit Mode ON: Click any icon to edit or delete it.");
+            }
+            loadSlider(); // Updates slider edit overlay state
+        });
+
+        // 4. LOAD APPS
+        function loadApps() {
+            const appsRef = ref(db, 'apps');
+            onValue(appsRef, (snapshot) => {
+                appGrid.innerHTML = ''; 
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    for (const id in data) {
+                        createAppIcon(id, data[id]);
+                    }
+                }
+                
+                // Yahan ek chhoti si update ki hai taaki Firebase Realtime update hone par
+                // search apply rahe aur screen reset na ho jaye.
+                const currentSearchTerm = document.getElementById('search-bar').value;
+                if(currentSearchTerm) {
+                    applySearch(currentSearchTerm);
+                }
+            });
+        }
+
+        function createAppIcon(id, data) {
+            const div = document.createElement('div');
+            div.className = 'app-icon';
+            div.innerHTML = `
+                <img src="${data.photo}" class="app-img">
+                <span class="app-name">${data.name}</span>
+            `;
+            div.addEventListener('click', () => {
+                if (isEditMode) {
+                    openEditModal(id, data);
+                } else {
+                    openNoticeViewer(data);
+                }
+            });
+            appGrid.appendChild(div);
+        }
+
+        // 5. ADD / EDIT APP MODAL (Step 1)
+        const appModal = document.getElementById('app-modal');
+        const noticeBuilderModal = document.getElementById('notice-builder-modal');
+        const noticeEditor = document.getElementById('notice-editor');
+        
+        document.getElementById('add-btn').addEventListener('click', () => {
+            document.getElementById('modal-title').innerText = "Add New Link";
+            document.getElementById('app-id').value = "";
+            document.getElementById('app-name').value = "";
+            document.getElementById('app-link').value = "";
+            document.getElementById('app-photo').value = "";
+            document.getElementById('preview-img').style.display = "none";
+            document.getElementById('btn-delete').classList.add('hidden');
+            base64Image = "";
+            tempAppData = {};
+            appModal.classList.remove('hidden');
+        });
+
+        function openEditModal(id, data) {
+            document.getElementById('modal-title').innerText = "Edit Link";
+            document.getElementById('app-id').value = id;
+            document.getElementById('app-name').value = data.name;
+            document.getElementById('app-link').value = data.link;
+            document.getElementById('app-photo').value = "";
+            
+            const preview = document.getElementById('preview-img');
+            preview.src = data.photo;
+            preview.style.display = "block";
+            base64Image = data.photo; 
+            
+            tempAppData = { notice: data.notice || "" };
+            
+            document.getElementById('btn-delete').classList.remove('hidden');
+            appModal.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-cancel-app').addEventListener('click', () => appModal.classList.add('hidden'));
+
+        document.getElementById('app-photo').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    base64Image = event.target.result;
+                    const preview = document.getElementById('preview-img');
+                    preview.src = base64Image;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('btn-save-app').addEventListener('click', () => {
+            const id = document.getElementById('app-id').value;
+            const name = document.getElementById('app-name').value;
+            const link = document.getElementById('app-link').value;
+
+            if (!name || !link || !base64Image) {
+                alert("Please provide name, final link, and photo!");
+                return;
+            }
+
+            tempAppData.id = id;
+            tempAppData.name = name;
+            tempAppData.link = link;
+            tempAppData.photo = base64Image;
+
+            appModal.classList.add('hidden');
+            
+            noticeEditor.innerHTML = tempAppData.notice || "";
+            noticeBuilderModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            const id = document.getElementById('app-id').value;
+            if (confirm("Are you sure you want to delete this icon?")) {
+                remove(ref(db, 'apps/' + id));
+                appModal.classList.add('hidden');
+            }
+        });
+
+
+        // 6. NOTICE BUILDER MODAL LOGIC (Step 2)
+        function insertAtCursor(html) {
+            noticeEditor.focus();
+            if(!document.execCommand('insertHTML', false, html)) {
+                noticeEditor.innerHTML += html; 
+            }
+        }
+
+        document.getElementById('btn-cancel-notice').addEventListener('click', () => {
+            noticeBuilderModal.classList.add('hidden');
+            appModal.classList.remove('hidden'); 
+        });
+
+        document.getElementById('btn-notice-img').addEventListener('click', () => {
+            document.getElementById('notice-img-input').click();
+        });
+
+        document.getElementById('notice-img-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const b64 = event.target.result;
+                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove()">&times;</button></div>`);
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ""; 
+        });
+
+        document.getElementById('btn-notice-link').addEventListener('click', () => {
+            const url = prompt("Enter the URL to insert in notice:");
+            if (url) {
+                insertAtCursor(`<a href="${url}" target="_blank">${url}</a>`);
+            }
+        });
+
+        document.getElementById('btn-save-final').addEventListener('click', () => {
+            tempAppData.notice = noticeEditor.innerHTML;
+
+            const finalData = {
+                name: tempAppData.name,
+                link: tempAppData.link,
+                photo: tempAppData.photo,
+                notice: tempAppData.notice
+            };
+
+            if (tempAppData.id) {
+                update(ref(db, 'apps/' + tempAppData.id), finalData);
+            } else {
+                push(ref(db, 'apps'), finalData);
+            }
+            
+            noticeBuilderModal.classList.add('hidden');
+            tempAppData = {}; 
+        });
+
+
+        // 7. NOTICE VIEWER (Display to User)
+        const noticeViewerModal = document.getElementById('notice-viewer-modal');
+        const viewerContent = document.getElementById('viewer-content');
+        const viewerLinkBtn = document.getElementById('viewer-link-btn');
+
+        function openNoticeViewer(data) {
+            viewerContent.innerHTML = data.notice || "<p>No notice provided.</p>";
+            viewerLinkBtn.onclick = () => {
+                window.open(data.link, '_blank');
+            };
+            noticeViewerModal.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-close-viewer').addEventListener('click', () => {
+            noticeViewerModal.classList.add('hidden');
+            viewerContent.innerHTML = "";
+        });
+
+
+        // 8. SETTINGS MODAL
+        const settingsModal = document.getElementById('settings-modal');
+        
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+            document.getElementById('set-email').value = "";
+            document.getElementById('set-old-pass').value = "";
+            document.getElementById('set-new-pass').value = "";
+        });
+
+        document.getElementById('btn-cancel-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        document.getElementById('btn-save-settings').addEventListener('click', () => {
+            const email = document.getElementById('set-email').value;
+            const oldPass = document.getElementById('set-old-pass').value;
+            const newPass = document.getElementById('set-new-pass').value;
+
+            if (email !== "ambujewns404@gmail.com") {
+                alert("Unauthorized Email!");
+                return;
+            }
+            if (oldPass !== currentPassword) {
+                alert("Old password incorrect!");
+                return;
+            }
+            if (newPass.length !== 8) {
+                alert("New password must be exactly 8 digits!");
+                return;
+            }
+
+            set(ref(db, 'admin/password'), newPass).then(() => {
+                currentPassword = newPass;
+                alert("Password changed successfully!");
+                settingsModal.classList.add('hidden');
+            }).catch((err) => {
+                alert("Error changing password: " + err.message);
+            });
+        });
+
+        // ==========================================
+        // 9. NAYA SLIDER FEATURE LOGIC
+        // ==========================================
+        let sliderDataCache = {};
+        let slideInterval;
+        let slideDirection = 1;
+        let currentSlideSlot = -1;
+
+        function loadSlider() {
+            const track = document.getElementById('slider-track');
+            if (!track) return;
+            track.innerHTML = '';
+            
+            // Check agar ek bhi image hai normal mode ke liye
+            let hasImages = false;
+            for (let i = 1; i <= 5; i++) {
+                if (sliderDataCache['slide' + i]) hasImages = true;
+            }
+
+            // Agar normal mode me hai aur koi image nahi hai, toh chhupa do
+            if (!isEditMode && !hasImages) {
+                document.getElementById('slider-container').style.display = 'none';
+                return;
+            } else {
+                document.getElementById('slider-container').style.display = 'block';
+            }
+
+            // 5 slots banayenge
+            for(let i = 1; i <= 5; i++) {
+                const b64 = sliderDataCache['slide'+i];
+                if (!b64 && !isEditMode) continue; // Normal view me khali slot skip karo
+
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                
+                if (b64) {
+                    slide.innerHTML = `<img src="${b64}">`;
+                } else {
+                    slide.innerHTML = `<div class="empty-slide-text">Slot ${i} Khali Hai</div>`;
+                }
+
+                // Edit Mode me buttons add karna
+                if (isEditMode) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'slide-edit-overlay';
+                    
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'btn btn-primary';
+                    upBtn.innerText = b64 ? 'Change Image' : 'Upload Image';
+                    upBtn.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        currentSlideSlot = i; 
+                        document.getElementById('slider-img-input').click(); 
+                    };
+                    overlay.appendChild(upBtn);
+
+                    if (b64) {
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'btn btn-danger';
+                        delBtn.innerText = 'Delete';
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if(confirm('Yeh image delete karni hai?')) {
+                                remove(ref(db, 'slider/slide' + i));
+                            }
+                        };
+                        overlay.appendChild(delBtn);
+                    }
+                    slide.appendChild(overlay);
+                }
+                track.appendChild(slide);
+            }
+            startAutoScroll();
+        }
+
+        // Firebase Realtime Database se Slider ka data fetch karna
+        const sliderRef = ref(db, 'slider');
+        onValue(sliderRef, (snapshot) => {
+            sliderDataCache = snapshot.exists() ? snapshot.val() : {};
+            loadSlider();
+        });
+
+        // Image Gallery se Upload Logic
+        document.getElementById('slider-img-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && currentSlideSlot !== -1) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const b64 = event.target.result;
+                    set(ref(db, 'slider/slide' + currentSlideSlot), b64).then(() => {
+                        // Upload successful
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ""; // Input reset karo
+        });
+
+        // Auto Scroll aur Reverse (Ping-Pong) Logic
+        function startAutoScroll() {
+            clearInterval(slideInterval);
+            if (isEditMode) return; // Edit mode me auto-scroll band rahega
+            
+            slideInterval = setInterval(() => {
+                const track = document.getElementById('slider-track');
+                if (!track) return;
+                
+                const maxScroll = track.scrollWidth - track.clientWidth;
+                if (maxScroll <= 0) return; // Agar 1 hi image hai toh mat scroll karo
+                
+                // End par pohanchne ke baad reverse direction set karo
+                if (track.scrollLeft >= maxScroll - 10) {
+                    slideDirection = -1; // Reverse
+                } else if (track.scrollLeft <= 10) {
+                    slideDirection = 1;  // Forward
+                }
+                
+                track.scrollBy({ left: track.clientWidth * slideDirection, behavior: 'smooth' });
+            }, 3000); // Har 3 second baad scroll
+        }
+
+        // User touch karega toh automatic scrolling ruk jayegi
+        const trackEl = document.getElementById('slider-track');
+        trackEl.addEventListener('touchstart', () => clearInterval(slideInterval), {passive: true});
+        trackEl.addEventListener('touchend', () => setTimeout(startAutoScroll, 4000), {passive: true});
+        trackEl.addEventListener('mouseenter', () => clearInterval(slideInterval));
+        trackEl.addEventListener('mouseleave', startAutoScroll);
+
+        // ==========================================
+        // 10. SEARCH FEATURE LOGIC
+        // ==========================================
+        const btnSearch = document.getElementById('btn-search');
+        const searchBar = document.getElementById('search-bar');
+
+        // Search icon par click hone par bar open/close karna
+        btnSearch.addEventListener('click', () => {
+            searchBar.classList.toggle('hidden');
+            if (!searchBar.classList.contains('hidden')) {
+                searchBar.focus(); // Khulte hi type karne ke liye ready
+            } else {
+                searchBar.value = ''; // Close karne par reset
+                applySearch(''); // Sab wapas show karne ke liye
+            }
+        });
+
+        // Jab user search bar me type karega
+        searchBar.addEventListener('input', (e) => {
+            applySearch(e.target.value);
+        });
+
+        // Main filter function
+        function applySearch(query) {
+            query = query.toLowerCase(); // Case-insensitive banane ke liye
+            const allIcons = document.querySelectorAll('.app-icon');
+            
+            allIcons.forEach(icon => {
+                const appName = icon.querySelector('.app-name').innerText.toLowerCase();
+                
+                // Agar search word naam ke andar hai (starting me ya beech me kahin bhi)
+                if (appName.includes(query)) {
+                    icon.style.display = 'flex'; // Dikhao
+                } else {
+                    icon.style.display = 'none'; // Chhupao
+                }
+            });
+        }
+        
+        // ==========================================
+        // 11. NAYA NOTIFICATIONS FEATURE LOGIC
+        // ==========================================
+        const btnNotification = document.getElementById('btn-notification');
+        const notifBadge = document.getElementById('notif-badge');
+        const notificationModal = document.getElementById('notification-modal');
+        const btnCloseNotification = document.getElementById('btn-close-notification');
+        const notifList = document.getElementById('notif-list');
+        const btnToggleAddNotif = document.getElementById('btn-toggle-add-notif');
+        const addNotifSection = document.getElementById('add-notif-section');
+        const btnSaveNotif = document.getElementById('btn-save-notif');
+        
+        // LocalStorage se last seen time read karna
+        let seenTimestamp = parseInt(localStorage.getItem('last_seen_notif') || '0');
+        let latestNotifTimestamp = 0;
+
+        // Firebase Listener for Notifications
+        const notifRef = ref(db, 'system_notifications');
+        onValue(notifRef, (snapshot) => {
+            notifList.innerHTML = '';
+            let hasNewData = false;
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                // Naye messages sabse upar dikhane ke liye sort reverse
+                const sortedKeys = Object.keys(data).sort((a, b) => data[b].timestamp - data[a].timestamp);
+                
+                if (sortedKeys.length > 0) {
+                    latestNotifTimestamp = data[sortedKeys[0]].timestamp;
+                    if (latestNotifTimestamp > seenTimestamp) {
+                        hasNewData = true;
+                    }
+                }
+
+                sortedKeys.forEach(key => {
+                    const notif = data[key];
+                    const div = document.createElement('div');
+                    div.style.background = '#333';
+                    div.style.padding = '12px';
+                    div.style.borderRadius = '8px';
+                    div.style.position = 'relative';
+                    div.style.borderLeft = '4px solid var(--primary)';
+                    
+                    let contentHtml = `<p style="margin: 0 0 8px 0; font-size: 0.9rem; padding-right: 25px;">${notif.text}</p>`;
+                    if (notif.link) {
+                        contentHtml += `<a href="${notif.link}" target="_blank" style="color: var(--primary); font-size: 0.85rem; word-break: break-all; text-decoration: none;">🔗 ${notif.link}</a>`;
+                    }
+                    
+                    div.innerHTML = contentHtml;
+                    
+                    // Har message par Delete button add karna
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'del-img-btn';
+                    delBtn.style.top = '8px';
+                    delBtn.style.right = '8px';
+                    delBtn.style.width = '22px';
+                    delBtn.style.height = '22px';
+                    delBtn.style.fontSize = '14px';
+                    delBtn.innerHTML = '&times;';
+                    delBtn.title = "Delete";
+                    delBtn.onclick = () => {
+                        if(confirm("Are you sure you want to delete this notification?")) {
+                            remove(ref(db, 'system_notifications/' + key));
+                        }
+                    };
+                    div.appendChild(delBtn);
+                    
+                    notifList.appendChild(div);
+                });
+            } else {
+                notifList.innerHTML = '<p style="color: #888; text-align: center; margin-top: 20px;">No notifications yet.</p>';
+            }
+
+            // Agar notification page hidden hai aur naya notice aya hai toh Red Dot Show karo
+            if (hasNewData && notificationModal.classList.contains('hidden')) {
+                notifBadge.classList.remove('hidden');
+            }
+        });
+
+        // Toggle Add Notification Section
+        btnToggleAddNotif.addEventListener('click', () => {
+            addNotifSection.classList.toggle('hidden');
+            if (!addNotifSection.classList.contains('hidden')) {
+                document.getElementById('notif-text').focus();
+            }
+        });
+
+        // Save Notification Button Logic
+        btnSaveNotif.addEventListener('click', () => {
+            const text = document.getElementById('notif-text').value.trim();
+            const link = document.getElementById('notif-link').value.trim();
+            
+            if (!text && !link) {
+                alert("Please add some text or link!");
+                return;
+            }
+
+            const newNotif = {
+                text: text,
+                link: link,
+                timestamp: Date.now()
+            };
+
+            push(ref(db, 'system_notifications'), newNotif).then(() => {
+                document.getElementById('notif-text').value = '';
+                document.getElementById('notif-link').value = '';
+                addNotifSection.classList.add('hidden'); // Save ke baad block close ho jayega
+            }).catch(err => {
+                alert("Error saving notification: " + err.message);
+            });
+        });
+
+        // Open Notification Modal & Hide Red Dot
+        btnNotification.addEventListener('click', () => {
+            notificationModal.classList.remove('hidden');
+            notifBadge.classList.add('hidden');
+            
+            // Mark as seen in LocalStorage
+            seenTimestamp = Date.now();
+            localStorage.setItem('last_seen_notif', seenTimestamp.toString());
+        });
+
+        // Close Notification Modal
+        btnCloseNotification.addEventListener('click', () => {
+            notificationModal.classList.add('hidden');
+            addNotifSection.classList.add('hidden'); // Box ko default hide kar do
+        });
+
+    </script>
+</body>
+</html>
