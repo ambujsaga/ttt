@@ -232,6 +232,33 @@
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* =======================================
+           NEW GLOW AND BADGE FEATURE CSS
+        ======================================= */
+        @keyframes appGlow {
+            0% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); border-color: rgba(255, 255, 255, 0.6); }
+            50% { box-shadow: 0 0 18px rgba(6, 214, 160, 0.65); border-color: var(--success); }
+            100% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); border-color: rgba(255, 255, 255, 0.6); }
+        }
+        .app-glowing {
+            animation: appGlow 2s infinite ease-in-out !important;
+        }
+        .new-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 8px;
+            z-index: 6;
+            box-shadow: 0 2px 6px rgba(239, 35, 60, 0.4);
+            letter-spacing: 0.5px;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
     </style>
 </head>
 <body>
@@ -447,6 +474,17 @@
                 appGrid.innerHTML = ''; 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
+
+                    // --- INITIALIZE HISTORY DATA BASELINE ON FIRST TIME VISIT ---
+                    if (!localStorage.getItem('t3_app_history_initialized')) {
+                        let initialClicked = [];
+                        for (const id in data) {
+                            initialClicked.push(id);
+                        }
+                        localStorage.setItem('t3_clicked_apps', JSON.stringify(initialClicked));
+                        localStorage.setItem('t3_app_history_initialized', 'true');
+                    }
+
                     for (const id in data) {
                         createAppIcon(id, data[id]);
                     }
@@ -468,6 +506,32 @@
                 <img src="${data.photo}" class="app-img">
                 <span class="app-name">${data.name}</span>
             `;
+
+            // ==============================================================
+            // --- NAYA RANDOM POSITION AND NEW GLOW LOGIC START ---
+            // ==============================================================
+            let pinnedAppsList = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+            
+            // Random order assign karega session refresh ke aadhar par agar app pinned nahi hai toh
+            if (!pinnedAppsList.includes(id)) {
+                if (!window.sessionOrders) window.sessionOrders = {};
+                if (!window.sessionOrders[id]) {
+                    window.sessionOrders[id] = Math.floor(Math.random() * 10000) + 1;
+                }
+                div.style.order = window.sessionOrders[id];
+            }
+
+            // Glowing aur NEW Badge handling feature
+            let clickedAppsList = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
+            if (!clickedAppsList.includes(id)) {
+                div.classList.add('app-glowing');
+                div.style.position = 'relative';
+                div.insertAdjacentHTML('beforeend', '<div class="new-badge">NEW</div>');
+            }
+            // ==============================================================
+            // --- NAYA RANDOM POSITION AND NEW GLOW LOGIC END ---
+            // ==============================================================
+
             div.addEventListener('click', () => {
                 if (isEditMode) {
                     openEditModal(id, data);
@@ -475,6 +539,23 @@
                     openNoticeViewer(data);
                 }
             });
+
+            // ==============================================================
+            // --- CLICK PAR NEW BADGE HATINGE KA FEATURE START ---
+            // ==============================================================
+            div.addEventListener('click', () => {
+                let currentClicked = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
+                if (!currentClicked.includes(id)) {
+                    currentClicked.push(id);
+                    localStorage.setItem('t3_clicked_apps', JSON.stringify(currentClicked));
+                    div.classList.remove('app-glowing');
+                    const nb = div.querySelector('.new-badge');
+                    if (nb) nb.remove();
+                }
+            });
+            // ==============================================================
+            // --- CLICK PAR NEW BADGE HATINGE KA FEATURE END ---
+            // ==============================================================
 
             // ==============================================================
             // --- NAYA PIN TO TOP FEATURE (LOCAL STORAGE ONLY) START ---
