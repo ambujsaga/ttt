@@ -475,6 +475,110 @@
                     openNoticeViewer(data);
                 }
             });
+
+            // ==============================================================
+            // --- NAYA PIN TO TOP FEATURE (LOCAL STORAGE ONLY) START ---
+            // ==============================================================
+            div.style.position = 'relative'; 
+            let pinnedApps = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+            
+            // Check agar app pehle se pinned hai
+            if (pinnedApps.includes(id)) {
+                div.style.order = '-1';
+                div.style.boxShadow = '0 0 15px rgba(245, 183, 0, 0.4)';
+                div.style.borderColor = 'rgba(245, 183, 0, 0.8)';
+                div.insertAdjacentHTML('beforeend', '<div class="pin-indicator" style="position:absolute; top:-8px; left:-8px; font-size:14px; z-index:5; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📌</div>');
+            }
+
+            let longPressTimer;
+            let isLongPress = false;
+
+            const startLongPress = (e) => {
+                if (isEditMode) return; 
+                isLongPress = false; // Reset
+                
+                // 4 seconds (4000ms) ka timer
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true; // Timer pura hua toh flag true kardo
+                    if(div.querySelector('.pin-toggle-btn')) return;
+                    
+                    let currPinned = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+                    let isPinned = currPinned.includes(id);
+                    
+                    // Pin/Unpin button generate karo
+                    const pinBtn = document.createElement('button');
+                    pinBtn.className = 'pin-toggle-btn';
+                    pinBtn.innerHTML = isPinned ? '❌' : '📌';
+                    pinBtn.style.cssText = 'position:absolute; top:-10px; right:-10px; background:' + (isPinned ? '#ef233c' : '#f5b700') + '; color:#fff; border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:50; box-shadow:0 2px 10px rgba(0,0,0,0.3); font-size:16px; display:flex; align-items:center; justify-content:center; animation: popIn 0.3s ease;';
+                    
+                    pinBtn.addEventListener('click', (ev) => {
+                        ev.stopPropagation(); // Parent div ka click trigger na ho
+                        let updatedPinned = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+                        
+                        if (isPinned) {
+                            // Unpin Logic
+                            updatedPinned = updatedPinned.filter(pId => pId !== id);
+                            localStorage.setItem('t3_pinned_apps', JSON.stringify(updatedPinned));
+                            
+                            // Normal style wapas le aao
+                            div.style.order = '0';
+                            div.style.boxShadow = '';
+                            div.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+                            const iconEl = div.querySelector('.pin-indicator');
+                            if(iconEl) iconEl.remove();
+                            
+                        } else {
+                            // Pin Logic
+                            if (updatedPinned.length >= 2) {
+                                alert('Aap maximum 2 apps hi pin kar sakte hain!');
+                                pinBtn.remove();
+                                return;
+                            }
+                            updatedPinned.push(id);
+                            localStorage.setItem('t3_pinned_apps', JSON.stringify(updatedPinned));
+                            
+                            // Pin style lagao
+                            div.style.order = '-1';
+                            div.style.boxShadow = '0 0 15px rgba(245, 183, 0, 0.4)';
+                            div.style.borderColor = 'rgba(245, 183, 0, 0.8)';
+                            div.insertAdjacentHTML('beforeend', '<div class="pin-indicator" style="position:absolute; top:-8px; left:-8px; font-size:14px; z-index:5; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📌</div>');
+                        }
+                        pinBtn.remove();
+                    });
+
+                    div.appendChild(pinBtn);
+                    
+                    // Button 5 second mein apne aap hat jayega agar user kuch nahi karega
+                    setTimeout(() => {
+                        if(pinBtn.parentNode) pinBtn.remove();
+                    }, 5000);
+                    
+                }, 4000); 
+            };
+
+            const cancelLongPress = () => clearTimeout(longPressTimer);
+
+            // Desktop & Mobile Touch events for Long Press
+            div.addEventListener('mousedown', startLongPress);
+            div.addEventListener('touchstart', startLongPress, {passive: true});
+            div.addEventListener('mouseup', cancelLongPress);
+            div.addEventListener('mouseleave', cancelLongPress);
+            div.addEventListener('touchend', cancelLongPress);
+            div.addEventListener('touchcancel', cancelLongPress);
+
+            // Capture Phase click listener: 
+            // Purane code ki ek bhi line ko affect kiye bina usko stop karne ke liye
+            div.addEventListener('click', (ev) => {
+                if (isLongPress) {
+                    ev.stopImmediatePropagation();
+                    ev.preventDefault();
+                    isLongPress = false;
+                }
+            }, true);
+            // ==============================================================
+            // --- NAYA PIN TO TOP FEATURE (LOCAL STORAGE ONLY) END ---
+            // ==============================================================
+
             appGrid.appendChild(div);
         }
 
