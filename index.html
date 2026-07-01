@@ -112,6 +112,30 @@
             letter-spacing: 0.3px;
         }
 
+        /* =======================================
+           NEW APP BADGE ANIMATION (Naya Update)
+        ======================================= */
+        .new-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff0040;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 10px;
+            z-index: 10;
+            box-shadow: 0 0 10px #ff0040, 0 0 20px #ff0040;
+            animation: glowingBadge 1.5s infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes glowingBadge {
+            0% { box-shadow: 0 0 5px rgba(255, 0, 64, 0.5); transform: scale(1); }
+            100% { box-shadow: 0 0 15px rgba(255, 0, 64, 0.9), 0 0 20px rgba(255, 0, 64, 0.6); transform: scale(1.05); }
+        }
+
         /* Floating Add Button */
         #add-btn { position: fixed; bottom: 35px; right: 35px; width: 65px; height: 65px; border-radius: 50%; background: var(--primary); color: white; font-size: 2.2rem; border: none; cursor: pointer; box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; transition: all 0.3s ease; animation: float 3s ease-in-out infinite; }
         #add-btn:hover { background: #324fc2; transform: scale(1.1); animation: none; }
@@ -232,33 +256,6 @@
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-
-        /* =======================================
-           NEW GLOW AND BADGE FEATURE CSS
-        ======================================= */
-        @keyframes appGlow {
-            0% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); border-color: rgba(255, 255, 255, 0.6); }
-            50% { box-shadow: 0 0 18px rgba(6, 214, 160, 0.65); border-color: var(--success); }
-            100% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); border-color: rgba(255, 255, 255, 0.6); }
-        }
-        .app-glowing {
-            animation: appGlow 2s infinite ease-in-out !important;
-        }
-        .new-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: var(--danger);
-            color: white;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 3px 6px;
-            border-radius: 8px;
-            z-index: 6;
-            box-shadow: 0 2px 6px rgba(239, 35, 60, 0.4);
-            letter-spacing: 0.5px;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
     </style>
 </head>
 <body>
@@ -275,12 +272,11 @@
     </div>
 
     <script>
-        // Start load logic directly independent of Firebase to ensure it smoothly disappears
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const loader = document.getElementById('loader-wrapper');
                 loader.classList.add('loader-hidden');
-            }, 2000); // 2 Seconds ka minimum loading time diya hai cool effect dikhne ke liye
+            }, 2000); 
         });
     </script>
 
@@ -435,7 +431,6 @@
             }
         });
 
-        // Initialize apps load directly since login is bypassed visually
         loadApps();
 
         // 1. LOGIN LOGIC
@@ -464,7 +459,7 @@
             if(isEditMode) {
                 alert("Edit Mode ON: Click any icon to edit or delete it.");
             }
-            loadSlider(); // Updates slider edit overlay state
+            loadSlider(); 
         });
 
         // 4. LOAD APPS
@@ -474,24 +469,11 @@
                 appGrid.innerHTML = ''; 
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-
-                    // --- INITIALIZE HISTORY DATA BASELINE ON FIRST TIME VISIT ---
-                    if (!localStorage.getItem('t3_app_history_initialized')) {
-                        let initialClicked = [];
-                        for (const id in data) {
-                            initialClicked.push(id);
-                        }
-                        localStorage.setItem('t3_clicked_apps', JSON.stringify(initialClicked));
-                        localStorage.setItem('t3_app_history_initialized', 'true');
-                    }
-
                     for (const id in data) {
                         createAppIcon(id, data[id]);
                     }
                 }
                 
-                // Yahan ek chhoti si update ki hai taaki Firebase Realtime update hone par
-                // search apply rahe aur screen reset na ho jaye.
                 const currentSearchTerm = document.getElementById('search-bar').value;
                 if(currentSearchTerm) {
                     applySearch(currentSearchTerm);
@@ -506,60 +488,26 @@
                 <img src="${data.photo}" class="app-img">
                 <span class="app-name">${data.name}</span>
             `;
-
-            // ==============================================================
-            // --- NAYA RANDOM POSITION AND NEW GLOW LOGIC START ---
-            // ==============================================================
-            let pinnedAppsList = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
             
-            // Random order assign karega session refresh ke aadhar par agar app pinned nahi hai toh
-            if (!pinnedAppsList.includes(id)) {
-                if (!window.sessionOrders) window.sessionOrders = {};
-                if (!window.sessionOrders[id]) {
-                    window.sessionOrders[id] = Math.floor(Math.random() * 10000) + 1;
-                }
-                div.style.order = window.sessionOrders[id];
-            }
-
-            // Glowing aur NEW Badge handling feature
-            let clickedAppsList = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
-            if (!clickedAppsList.includes(id)) {
-                div.classList.add('app-glowing');
-                div.style.position = 'relative';
-                div.insertAdjacentHTML('beforeend', '<div class="new-badge">NEW</div>');
-            }
             // ==============================================================
-            // --- NAYA RANDOM POSITION AND NEW GLOW LOGIC END ---
+            // NAYA UPDATE: NEW BADGE aur CLICK LISTENER 
             // ==============================================================
-
             div.addEventListener('click', () => {
                 if (isEditMode) {
                     openEditModal(id, data);
                 } else {
+                    // Click karne par New Badge hide karna aur save karna
+                    let currentClicked = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
+                    if (!currentClicked.includes(id)) {
+                        currentClicked.push(id);
+                        localStorage.setItem('t3_clicked_apps', JSON.stringify(currentClicked));
+                        const badgeEl = div.querySelector('.new-badge');
+                        if (badgeEl) badgeEl.remove();
+                    }
                     openNoticeViewer(data);
                 }
             });
 
-            // ==============================================================
-            // --- CLICK PAR NEW BADGE HATINGE KA FEATURE START ---
-            // ==============================================================
-            div.addEventListener('click', () => {
-                let currentClicked = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
-                if (!currentClicked.includes(id)) {
-                    currentClicked.push(id);
-                    localStorage.setItem('t3_clicked_apps', JSON.stringify(currentClicked));
-                    div.classList.remove('app-glowing');
-                    const nb = div.querySelector('.new-badge');
-                    if (nb) nb.remove();
-                }
-            });
-            // ==============================================================
-            // --- CLICK PAR NEW BADGE HATINGE KA FEATURE END ---
-            // ==============================================================
-
-            // ==============================================================
-            // --- NAYA PIN TO TOP FEATURE (LOCAL STORAGE ONLY) START ---
-            // ==============================================================
             div.style.position = 'relative'; 
             let pinnedApps = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
             
@@ -569,6 +517,15 @@
                 div.style.boxShadow = '0 0 15px rgba(245, 183, 0, 0.4)';
                 div.style.borderColor = 'rgba(245, 183, 0, 0.8)';
                 div.insertAdjacentHTML('beforeend', '<div class="pin-indicator" style="position:absolute; top:-8px; left:-8px; font-size:14px; z-index:5; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);">📌</div>');
+            } else {
+                // NAYA UPDATE: Random order apply on refresh taaki feed boring na lage
+                div.style.order = Math.floor(Math.random() * 1000);
+            }
+
+            // NAYA UPDATE: Add 'NEW' Badge if app is not in clicked list
+            let clickedApps = JSON.parse(localStorage.getItem('t3_clicked_apps') || '[]');
+            if (!clickedApps.includes(id)) {
+                div.insertAdjacentHTML('beforeend', '<div class="new-badge">NEW</div>');
             }
 
             let longPressTimer;
@@ -576,24 +533,22 @@
 
             const startLongPress = (e) => {
                 if (isEditMode) return; 
-                isLongPress = false; // Reset
+                isLongPress = false; 
                 
-                // 4 seconds (4000ms) ka timer
                 longPressTimer = setTimeout(() => {
-                    isLongPress = true; // Timer pura hua toh flag true kardo
+                    isLongPress = true; 
                     if(div.querySelector('.pin-toggle-btn')) return;
                     
                     let currPinned = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
                     let isPinned = currPinned.includes(id);
                     
-                    // Pin/Unpin button generate karo
                     const pinBtn = document.createElement('button');
                     pinBtn.className = 'pin-toggle-btn';
                     pinBtn.innerHTML = isPinned ? '❌' : '📌';
                     pinBtn.style.cssText = 'position:absolute; top:-10px; right:-10px; background:' + (isPinned ? '#ef233c' : '#f5b700') + '; color:#fff; border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:50; box-shadow:0 2px 10px rgba(0,0,0,0.3); font-size:16px; display:flex; align-items:center; justify-content:center; animation: popIn 0.3s ease;';
                     
                     pinBtn.addEventListener('click', (ev) => {
-                        ev.stopPropagation(); // Parent div ka click trigger na ho
+                        ev.stopPropagation(); 
                         let updatedPinned = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
                         
                         if (isPinned) {
@@ -601,8 +556,8 @@
                             updatedPinned = updatedPinned.filter(pId => pId !== id);
                             localStorage.setItem('t3_pinned_apps', JSON.stringify(updatedPinned));
                             
-                            // Normal style wapas le aao
-                            div.style.order = '0';
+                            // Normal style wapas le aao & give it a random order 
+                            div.style.order = Math.floor(Math.random() * 1000);
                             div.style.boxShadow = '';
                             div.style.borderColor = 'rgba(255, 255, 255, 0.6)';
                             const iconEl = div.querySelector('.pin-indicator');
@@ -629,7 +584,6 @@
 
                     div.appendChild(pinBtn);
                     
-                    // Button 5 second mein apne aap hat jayega agar user kuch nahi karega
                     setTimeout(() => {
                         if(pinBtn.parentNode) pinBtn.remove();
                     }, 5000);
@@ -639,7 +593,6 @@
 
             const cancelLongPress = () => clearTimeout(longPressTimer);
 
-            // Desktop & Mobile Touch events for Long Press
             div.addEventListener('mousedown', startLongPress);
             div.addEventListener('touchstart', startLongPress, {passive: true});
             div.addEventListener('mouseup', cancelLongPress);
@@ -647,8 +600,6 @@
             div.addEventListener('touchend', cancelLongPress);
             div.addEventListener('touchcancel', cancelLongPress);
 
-            // Capture Phase click listener: 
-            // Purane code ki ek bhi line ko affect kiye bina usko stop karne ke liye
             div.addEventListener('click', (ev) => {
                 if (isLongPress) {
                     ev.stopImmediatePropagation();
@@ -656,9 +607,6 @@
                     isLongPress = false;
                 }
             }, true);
-            // ==============================================================
-            // --- NAYA PIN TO TOP FEATURE (LOCAL STORAGE ONLY) END ---
-            // ==============================================================
 
             appGrid.appendChild(div);
         }
@@ -744,7 +692,6 @@
             }
         });
 
-
         // 6. NOTICE BUILDER MODAL LOGIC (Step 2)
         function insertAtCursor(html) {
             noticeEditor.focus();
@@ -802,7 +749,6 @@
             tempAppData = {}; 
         });
 
-
         // 7. NOTICE VIEWER (Display to User)
         const noticeViewerModal = document.getElementById('notice-viewer-modal');
         const viewerContent = document.getElementById('viewer-content');
@@ -820,7 +766,6 @@
             noticeViewerModal.classList.add('hidden');
             viewerContent.innerHTML = "";
         });
-
 
         // 8. SETTINGS MODAL
         const settingsModal = document.getElementById('settings-modal');
@@ -874,13 +819,11 @@
             if (!track) return;
             track.innerHTML = '';
             
-            // Check agar ek bhi image hai normal mode ke liye
             let hasImages = false;
             for (let i = 1; i <= 5; i++) {
                 if (sliderDataCache['slide' + i]) hasImages = true;
             }
 
-            // Agar normal mode me hai aur koi image nahi hai, toh chhupa do
             if (!isEditMode && !hasImages) {
                 document.getElementById('slider-container').style.display = 'none';
                 return;
@@ -888,10 +831,9 @@
                 document.getElementById('slider-container').style.display = 'block';
             }
 
-            // 5 slots banayenge
             for(let i = 1; i <= 5; i++) {
                 const b64 = sliderDataCache['slide'+i];
-                if (!b64 && !isEditMode) continue; // Normal view me khali slot skip karo
+                if (!b64 && !isEditMode) continue; 
 
                 const slide = document.createElement('div');
                 slide.className = 'slide';
@@ -902,7 +844,6 @@
                     slide.innerHTML = `<div class="empty-slide-text">Slot ${i} Khali Hai</div>`;
                 }
 
-                // Edit Mode me buttons add karna
                 if (isEditMode) {
                     const overlay = document.createElement('div');
                     overlay.className = 'slide-edit-overlay';
@@ -936,14 +877,12 @@
             startAutoScroll();
         }
 
-        // Firebase Realtime Database se Slider ka data fetch karna
         const sliderRef = ref(db, 'slider');
         onValue(sliderRef, (snapshot) => {
             sliderDataCache = snapshot.exists() ? snapshot.val() : {};
             loadSlider();
         });
 
-        // Image Gallery se Upload Logic
         document.getElementById('slider-img-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file && currentSlideSlot !== -1) {
@@ -951,38 +890,34 @@
                 reader.onload = (event) => {
                     const b64 = event.target.result;
                     set(ref(db, 'slider/slide' + currentSlideSlot), b64).then(() => {
-                        // Upload successful
                     });
                 };
                 reader.readAsDataURL(file);
             }
-            e.target.value = ""; // Input reset karo
+            e.target.value = ""; 
         });
 
-        // Auto Scroll aur Reverse (Ping-Pong) Logic
         function startAutoScroll() {
             clearInterval(slideInterval);
-            if (isEditMode) return; // Edit mode me auto-scroll band rahega
+            if (isEditMode) return; 
             
             slideInterval = setInterval(() => {
                 const track = document.getElementById('slider-track');
                 if (!track) return;
                 
                 const maxScroll = track.scrollWidth - track.clientWidth;
-                if (maxScroll <= 0) return; // Agar 1 hi image hai toh mat scroll karo
+                if (maxScroll <= 0) return; 
                 
-                // End par pohanchne ke baad reverse direction set karo
                 if (track.scrollLeft >= maxScroll - 10) {
-                    slideDirection = -1; // Reverse
+                    slideDirection = -1; 
                 } else if (track.scrollLeft <= 10) {
-                    slideDirection = 1;  // Forward
+                    slideDirection = 1;  
                 }
                 
                 track.scrollBy({ left: track.clientWidth * slideDirection, behavior: 'smooth' });
-            }, 3000); // Har 3 second baad scroll
+            }, 3000); 
         }
 
-        // User touch karega toh automatic scrolling ruk jayegi
         const trackEl = document.getElementById('slider-track');
         trackEl.addEventListener('touchstart', () => clearInterval(slideInterval), {passive: true});
         trackEl.addEventListener('touchend', () => setTimeout(startAutoScroll, 4000), {passive: true});
@@ -995,35 +930,31 @@
         const btnSearch = document.getElementById('btn-search');
         const searchBar = document.getElementById('search-bar');
 
-        // Search icon par click hone par bar open/close karna
         btnSearch.addEventListener('click', () => {
             searchBar.classList.toggle('hidden');
             if (!searchBar.classList.contains('hidden')) {
-                searchBar.focus(); // Khulte hi type karne ke liye ready
+                searchBar.focus(); 
             } else {
-                searchBar.value = ''; // Close karne par reset
-                applySearch(''); // Sab wapas show karne ke liye
+                searchBar.value = ''; 
+                applySearch(''); 
             }
         });
 
-        // Jab user search bar me type karega
         searchBar.addEventListener('input', (e) => {
             applySearch(e.target.value);
         });
 
-        // Main filter function
         function applySearch(query) {
-            query = query.toLowerCase(); // Case-insensitive banane ke liye
+            query = query.toLowerCase(); 
             const allIcons = document.querySelectorAll('.app-icon');
             
             allIcons.forEach(icon => {
                 const appName = icon.querySelector('.app-name').innerText.toLowerCase();
                 
-                // Agar search word naam ke andar hai (starting me ya beech me kahin bhi)
                 if (appName.includes(query)) {
-                    icon.style.display = 'flex'; // Dikhao
+                    icon.style.display = 'flex'; 
                 } else {
-                    icon.style.display = 'none'; // Chhupao
+                    icon.style.display = 'none'; 
                 }
             });
         }
@@ -1037,11 +968,9 @@
         const btnCloseNotification = document.getElementById('btn-close-notification');
         const notifList = document.getElementById('notif-list');
 
-        // LocalStorage se last seen time read karna
         let seenTimestamp = parseInt(localStorage.getItem('t3_last_seen_notif') || '0');
         let latestNotifTimestamp = 0;
 
-        // Firebase Listener for Notifications
         const notifRef = ref(db, 'system_notifications');
         onValue(notifRef, (snapshot) => {
             notifList.innerHTML = '';
@@ -1049,7 +978,6 @@
 
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                // Naye messages sabse upar dikhane ke liye sort reverse
                 const sortedKeys = Object.keys(data).sort((a, b) => data[b].timestamp - data[a].timestamp);
                 
                 if (sortedKeys.length > 0) {
@@ -1063,7 +991,6 @@
                     const notif = data[key];
                     const div = document.createElement('div');
                     
-                    // T3 aesthetic ke hisab se styling
                     div.style.background = '#f8f9fc';
                     div.style.padding = '15px';
                     div.style.borderRadius = '12px';
@@ -1084,23 +1011,19 @@
                 notifList.innerHTML = '<p style="color: #6c757d; text-align: center; margin-top: 20px;">No notifications yet.</p>';
             }
 
-            // Agar notification page hidden hai aur naya notice aya hai toh Red Dot Show karo
             if (hasNewData && notificationModal.classList.contains('hidden')) {
                 notifBadge.classList.remove('hidden');
             }
         });
 
-        // Open Notification Modal & Hide Red Dot
         btnNotification.addEventListener('click', () => {
             notificationModal.classList.remove('hidden');
             notifBadge.classList.add('hidden');
             
-            // Mark as seen in LocalStorage
             seenTimestamp = Date.now();
             localStorage.setItem('t3_last_seen_notif', seenTimestamp.toString());
         });
 
-        // Close Notification Modal
         btnCloseNotification.addEventListener('click', () => {
             notificationModal.classList.add('hidden');
         });
@@ -1110,7 +1033,6 @@
         // ==========================================
         const headerLogo = document.querySelector('.header-left img');
         if (headerLogo) {
-            // Sirf dikhne ke liye ki clickable hai, koi external visual change nahi
             headerLogo.style.cursor = 'pointer'; 
             let tapCount = 0;
             let tapTimeout;
@@ -1120,12 +1042,10 @@
                 clearTimeout(tapTimeout);
 
                 if (tapCount === 5) {
-                    // YAHAN APNA SECRET LINK REPLACE KARO
                     window.open('ttt3panel.html', '_blank'); 
-                    tapCount = 0; // Ek baar khulne ke baad reset
+                    tapCount = 0; 
                 }
 
-                // Agar lagataar tap nahi kiya (1 second ka gap ho gaya) toh reset ho jayega
                 tapTimeout = setTimeout(() => {
                     tapCount = 0;
                 }, 1000);
