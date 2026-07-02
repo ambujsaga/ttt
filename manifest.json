@@ -1,5 +1,5 @@
 {
-  "name": "T3",
+  "name": "T3 | website hub",
   "short_name": "T3",
   "icons": [
     {
@@ -18,5 +18,5 @@
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#00e5ff"
+  "theme_color": "#4361ee"
 }
