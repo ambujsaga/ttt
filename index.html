@@ -441,6 +441,15 @@ if ('serviceWorker' in navigator) {
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // NEW: Function to safely increment realtime stats in Firebase for Wellbeing Tool
+        function incrementStat(appId, key) {
+            const statRef = ref(db, 'apps/' + appId + '/' + key);
+            get(statRef).then((snapshot) => {
+                const currentVal = snapshot.val() || 0;
+                update(ref(db, 'apps/' + appId), { [key]: currentVal + 1 });
+            });
+        }
+
         let currentPassword = "12345678"; 
         let isEditMode = false;
         let base64Image = "";
@@ -528,7 +537,8 @@ if ('serviceWorker' in navigator) {
                         const badgeEl = div.querySelector('.new-badge');
                         if (badgeEl) badgeEl.remove();
                     }
-                    openNoticeViewer(data);
+                    incrementStat(id, 'views'); // NEW: Increases App/Icon Visitors Count
+                    openNoticeViewer(data, id); // MODIFIED: Pass ID to viewer
                 }
             });
 
@@ -762,6 +772,8 @@ if ('serviceWorker' in navigator) {
             if (tempAppData.id) {
                 update(ref(db, 'apps/' + tempAppData.id), finalData);
             } else {
+                finalData.views = 0; // NEW: Initialize App Views
+                finalData.clicks = 0; // NEW: Initialize Link Clicks
                 push(ref(db, 'apps'), finalData);
             }
             
@@ -774,9 +786,11 @@ if ('serviceWorker' in navigator) {
         const viewerContent = document.getElementById('viewer-content');
         const viewerLinkBtn = document.getElementById('viewer-link-btn');
 
-        function openNoticeViewer(data) {
+        // MODIFIED: Accepts ID parameter to allow stat update
+        function openNoticeViewer(data, id) {
             viewerContent.innerHTML = data.notice || "<p>No notice provided.</p>";
             viewerLinkBtn.onclick = () => {
+                if(id) incrementStat(id, 'clicks'); // NEW: Increases Link Click Count
                 window.open(data.link, '_blank');
             };
             noticeViewerModal.classList.remove('hidden');
