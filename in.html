@@ -98,10 +98,6 @@
         #notice-editor img, #viewer-content img { max-width: 100%; border-radius: 5px; margin: 10px 0; display: block; }
         #notice-editor a, #viewer-content a { color: var(--primary); word-break: break-all; }
         #viewer-content { margin-bottom: 20px; font-size: 1rem; line-height: 1.5; }
-        
-        /* Added limits styling */
-        .limit-counter { font-size: 0.8rem; color: #6c757d; text-align: right; margin-top: -5px; margin-bottom: 10px; font-weight: bold; }
-        .notice-counter { margin-top: 5px; margin-bottom: 0px; }
 
         /* New styles for updates */
         .notice-img-container { position: relative; display: block; margin: 10px 0; }
@@ -252,10 +248,10 @@
             <input type="file" id="app-photo" accept="image/*">
             <img id="preview-img" style="width: 60px; height: 60px; border-radius: 10px; display: none; margin: 10px 0;">
             
-            <input type="text" id="app-name" placeholder="App Name (e.g., Google)" maxlength="10">
-            <div id="app-name-counter" class="limit-counter">0/10</div>
-
-            <input type="url" id="app-link" placeholder="Final Link (e.g., https://google.com)">
+            <input type="text" id="app-name" placeholder="App Name (e.g., YouTube)" maxlength="10">
+            <div id="app-name-count" style="font-size: 0.8rem; color: #6c757d; text-align: right; margin-top: -8px; margin-bottom: 10px; font-weight: bold;">(name 0/10)</div>
+            
+            <input type="url" id="app-link" placeholder="Final Link (e.g., https://youtube.com)">
             <div class="modal-actions">
                 <button class="btn btn-danger" id="btn-delete" class="hidden">Delete</button>
                 <button class="btn" id="btn-cancel-app" style="background:#e9ecef; color: var(--text-color);">Cancel</button>
@@ -267,7 +263,10 @@
     <div id="notice-builder-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 500px;">
             <h3 style="color: var(--primary); margin-top: 0;">Create/Edit Notice</h3>
-            <p style="font-size: 0.8rem; color: #6c757d; margin-top: 0;">Type text, or insert images/links below.</p>
+            <p style="font-size: 0.8rem; color: #6c757d; margin-top: 0; display: flex; justify-content: space-between;">
+                <span>Type text, or insert images/links below.</span>
+                <span id="notice-text-count" style="font-weight: bold;">(text 0/100)</span>
+            </p>
             
             <div class="toolbar">
                 <button id="btn-notice-img">
@@ -280,8 +279,6 @@
             </div>
             
             <div id="notice-editor" contenteditable="true" placeholder="Write notice here..."></div>
-            
-            <div id="notice-text-counter" class="limit-counter notice-counter">0/100</div>
             
             <div class="modal-actions">
                 <button class="btn" id="btn-cancel-notice" style="background:#e9ecef; color: var(--text-color); display: flex; align-items: center; justify-content: center; gap: 5px;">
@@ -327,11 +324,50 @@
         const mainPanel = document.getElementById('main-panel');
         const appGrid = document.getElementById('app-grid');
 
-        // Text tracking elements
+        // NEW APP NAME LIMIT LOGIC
         const appNameInput = document.getElementById('app-name');
-        const appNameCounter = document.getElementById('app-name-counter');
+        const appNameCount = document.getElementById('app-name-count');
+        appNameInput.addEventListener('input', () => {
+            let text = appNameInput.value;
+            appNameCount.innerText = `(${text || 'name'} ${text.length}/10)`;
+        });
+        appNameInput.addEventListener('keydown', (e) => {
+            if(appNameInput.value.length >= 10 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                alert("Limit reached: App/Icon name cannot exceed 10 characters!");
+                e.preventDefault();
+            }
+        });
+
+        // NEW NOTICE TEXT LIMIT LOGIC
         const noticeEditor = document.getElementById('notice-editor');
-        const noticeTextCounter = document.getElementById('notice-text-counter');
+        const noticeTextCount = document.getElementById('notice-text-count');
+        
+        function updateNoticeCount() {
+            let text = noticeEditor.innerText.replace(/\n/g, '').trim();
+            let len = text.length;
+            let displayWord = text.split(' ')[0] || 'text';
+            if (displayWord.length > 15) displayWord = displayWord.substring(0, 15) + '...';
+            noticeTextCount.innerText = `(${displayWord} ${len}/100)`;
+        }
+
+        noticeEditor.addEventListener('input', (e) => {
+            let text = noticeEditor.innerText.replace(/\n/g, '').trim();
+            if (text.length > 100) {
+                alert("Limit reached: Notice text cannot exceed 100 characters!");
+                document.execCommand('undo'); 
+                updateNoticeCount();
+            } else {
+                updateNoticeCount();
+            }
+        });
+
+        noticeEditor.addEventListener('keydown', (e) => {
+            let len = noticeEditor.innerText.replace(/\n/g, '').trim().length;
+            if (len >= 100 && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                alert("Limit reached: Notice text cannot exceed 100 characters!");
+            }
+        });
 
         function incrementStat(appId, key) {
             const statRef = ref(db, 'apps/' + appId + '/' + key);
@@ -408,20 +444,6 @@
             appGrid.appendChild(div);
         }
 
-        // UPDATE: App Name Logic & Alerts
-        function updateAppNameCounter() {
-            appNameCounter.innerText = `${appNameInput.value.length}/10`;
-        }
-
-        appNameInput.addEventListener('input', updateAppNameCounter);
-        appNameInput.addEventListener('keydown', (e) => {
-            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
-            if (appNameInput.value.length >= 10 && !allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
-                alert("Maximum limit of 10 characters reached for App Name!");
-                e.preventDefault();
-            }
-        });
-
         const appModal = document.getElementById('app-modal');
         const noticeBuilderModal = document.getElementById('notice-builder-modal');
         
@@ -429,11 +451,11 @@
             document.getElementById('modal-title').innerText = "Add New Link";
             document.getElementById('app-id').value = "";
             document.getElementById('app-name').value = "";
-            updateAppNameCounter(); // Reset App Name Counter
             document.getElementById('app-link').value = "";
             document.getElementById('app-photo').value = "";
             document.getElementById('preview-img').style.display = "none";
             document.getElementById('btn-delete').classList.add('hidden');
+            appNameCount.innerText = "(name 0/10)"; // RESET COUNTER
             base64Image = "";
             tempAppData = {};
             appModal.classList.remove('hidden');
@@ -443,7 +465,6 @@
             document.getElementById('modal-title').innerText = "Edit Link";
             document.getElementById('app-id').value = id;
             document.getElementById('app-name').value = data.name;
-            updateAppNameCounter(); // Update App Name Counter for edit
             document.getElementById('app-link').value = data.link;
             document.getElementById('app-photo').value = "";
             
@@ -452,6 +473,8 @@
             preview.style.display = "block";
             base64Image = data.photo; 
             
+            appNameCount.innerText = `(${data.name} ${data.name.length}/10)`; // SET EXISTING COUNT
+
             tempAppData = { notice: data.notice || "" };
             
             document.getElementById('btn-delete').classList.remove('hidden');
@@ -492,7 +515,7 @@
             appModal.classList.add('hidden');
             
             noticeEditor.innerHTML = tempAppData.notice || "";
-            updateNoticeCounter(); // Refresh counter on opening Notice Builder
+            updateNoticeCount(); // UPDATE NOTICE COUNTER ON OPEN
             noticeBuilderModal.classList.remove('hidden');
         });
 
@@ -508,49 +531,11 @@
             }
         });
 
-        // UPDATE: Notice Builder Text Restrictions and Counter
-        function getNoticeTextLength() {
-            return noticeEditor.innerText.replace(/\n/g, "").length;
-        }
-
-        function updateNoticeCounter() {
-            noticeTextCounter.innerText = `${getNoticeTextLength()}/100`;
-        }
-
-        noticeEditor.addEventListener('input', updateNoticeCounter);
-        
-        noticeEditor.addEventListener('keydown', (e) => {
-            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
-            if (getNoticeTextLength() >= 100 && !allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
-                alert("Maximum limit of 100 characters reached for Notice!");
-                e.preventDefault();
-            }
-        });
-
-        noticeEditor.addEventListener('paste', (e) => {
-            e.preventDefault();
-            let paste = (e.clipboardData || window.clipboardData).getData('text');
-            let currentLen = getNoticeTextLength();
-            let remaining = 100 - currentLen;
-            
-            if (remaining > 0) {
-                let textToInsert = paste.substring(0, remaining);
-                document.execCommand('insertText', false, textToInsert);
-                if (paste.length > remaining) {
-                    alert("Maximum limit of 100 characters reached! Extra text was removed.");
-                }
-            } else {
-                alert("Maximum limit of 100 characters reached for Notice!");
-            }
-            updateNoticeCounter();
-        });
-
         function insertAtCursor(html) {
             noticeEditor.focus();
             if(!document.execCommand('insertHTML', false, html)) {
                 noticeEditor.innerHTML += html; 
             }
-            updateNoticeCounter(); // Refresh after inserting link/img
         }
 
         document.getElementById('btn-cancel-notice').addEventListener('click', () => {
@@ -558,10 +543,11 @@
             appModal.classList.remove('hidden'); 
         });
 
-        // UPDATE: Check Notice Image Limits
+        // MODIFIED: Image Limit Logic Add
         document.getElementById('btn-notice-img').addEventListener('click', () => {
-            if (noticeEditor.querySelectorAll('img').length >= 1) {
-                alert("You can only add a maximum of 1 image in the notice!");
+            const currentImages = noticeEditor.querySelectorAll('img').length;
+            if (currentImages >= 1) {
+                alert("Limit reached: You can only add 1 image per notice!");
                 return;
             }
             document.getElementById('notice-img-input').click();
@@ -573,25 +559,34 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const b64 = event.target.result;
-                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove(); document.getElementById('notice-text-counter').innerText = document.getElementById('notice-editor').innerText.replace(/\\n/g, '').length + '/100';">&times;</button></div>`);
+                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove()">&times;</button></div>`);
+                    updateNoticeCount();
                 };
                 reader.readAsDataURL(file);
             }
             e.target.value = ""; 
         });
 
-        // UPDATE: Check Notice Link Limits
+        // MODIFIED: Link Limit Logic Add
         document.getElementById('btn-notice-link').addEventListener('click', () => {
-            if (noticeEditor.querySelectorAll('a').length >= 3) {
-                alert("You can only add a maximum of 3 links in the notice!");
+            const currentLinks = noticeEditor.querySelectorAll('a').length;
+            if (currentLinks >= 3) {
+                alert("Limit reached: You can only add 3 links per notice!");
                 return;
             }
             const url = prompt("Enter the URL to insert in notice:");
             if (url) {
+                let currentTextLen = noticeEditor.innerText.replace(/\n/g, '').trim().length;
+                if (currentTextLen + url.length > 100) {
+                    alert("Cannot add link! The URL text will exceed the 100 characters limit.");
+                    return;
+                }
                 insertAtCursor(`<a href="${url}" target="_blank">${url}</a>`);
+                updateNoticeCount();
             }
         });
 
+        // MODIFIED: Added 19 Seconds Redirect
         document.getElementById('btn-save-final').addEventListener('click', () => {
             tempAppData.notice = noticeEditor.innerHTML;
 
@@ -619,12 +614,11 @@
             
             noticeBuilderModal.classList.add('hidden');
             tempAppData = {}; 
-            
-            // UPDATE: 3 Second Redirect back to main page (index.html)
-            alert("App Published Successfully! Redirecting in 3 seconds...");
+
+            alert("Saved & Published successfully! You will be automatically redirected to the main page in 19 seconds.");
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 3000);
+            }, 19000);
         });
 
         const noticeViewerModal = document.getElementById('notice-viewer-modal');
