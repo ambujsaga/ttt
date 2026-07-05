@@ -420,13 +420,14 @@
 
     <script type="module">
         // Service Worker Registration Code
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker Registered Successfully!', reg))
-            .catch(err => console.error('Service Worker Registration Failed!', err));
-    });
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker Registered Successfully!', reg))
+                    .catch(err => console.error('Service Worker Registration Failed!', err));
+            });
         }
+        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, set, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -568,11 +569,12 @@ if ('serviceWorker' in navigator) {
                 
                 longPressTimer = setTimeout(() => {
                     isLongPress = true; 
-                    if(div.querySelector('.pin-toggle-btn')) return;
+                    if(div.querySelector('.pin-toggle-btn') || div.querySelector('.share-toggle-btn')) return;
                     
                     let currPinned = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
                     let isPinned = currPinned.includes(id);
                     
+                    // --- PIN BUTTON LOGIC ---
                     const pinBtn = document.createElement('button');
                     pinBtn.className = 'pin-toggle-btn';
                     pinBtn.innerHTML = isPinned ? 
@@ -599,6 +601,7 @@ if ('serviceWorker' in navigator) {
                             if (updatedPinned.length >= 2) {
                                 alert('You can only pin a maximum of 2 apps!');
                                 pinBtn.remove();
+                                if(div.querySelector('.share-toggle-btn')) div.querySelector('.share-toggle-btn').remove();
                                 return;
                             }
                             updatedPinned.push(id);
@@ -610,12 +613,46 @@ if ('serviceWorker' in navigator) {
                             div.insertAdjacentHTML('beforeend', '<div class="pin-indicator" style="position:absolute; top:-8px; left:-8px; z-index:5; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2); color:#f5b700;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-6.5M17 11a5 5 0 0 0-10 0v5h10Z"/></svg></div>');
                         }
                         pinBtn.remove();
+                        if(div.querySelector('.share-toggle-btn')) div.querySelector('.share-toggle-btn').remove();
+                    });
+
+                    // --- NEW SHARE BUTTON LOGIC ---
+                    const shareBtn = document.createElement('button');
+                    shareBtn.className = 'share-toggle-btn';
+                    shareBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
+                    
+                    shareBtn.style.cssText = 'position:absolute; top:-10px; left:-10px; background:#06d6a0; color:#fff; border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:50; box-shadow:0 2px 10px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; animation: popIn 0.3s ease;';
+                    
+                    shareBtn.addEventListener('click', async (ev) => {
+                        ev.stopPropagation(); 
+                        
+                        const appShortName = (data.name || '').split(' ')[0];
+                        const shareUrl = `https://t3reeworld.vercel.app/ussicon/${encodeURIComponent(appShortName)}`;
+                        
+                        if (navigator.share) {
+                            try {
+                                await navigator.share({
+                                    title: `Check out ${data.name} on T3`,
+                                    url: shareUrl
+                                });
+                            } catch (err) {
+                                console.log("Share cancelled", err);
+                            }
+                        } else {
+                            navigator.clipboard.writeText(shareUrl);
+                            alert("Link copied: " + shareUrl);
+                        }
+                        
+                        shareBtn.remove();
+                        if(pinBtn.parentNode) pinBtn.remove();
                     });
 
                     div.appendChild(pinBtn);
+                    div.appendChild(shareBtn);
                     
                     setTimeout(() => {
                         if(pinBtn.parentNode) pinBtn.remove();
+                        if(shareBtn.parentNode) shareBtn.remove();
                     }, 5000);
                     
                 }, 4000); 
@@ -1077,6 +1114,28 @@ if ('serviceWorker' in navigator) {
                 }, 1000);
             });
         }
+
+        // 13. AUTO SEARCH FROM URL (DEEP LINKING)
+        window.addEventListener('load', () => {
+            const urlPath = window.location.pathname;
+            
+            if (urlPath.includes('/ussicon/')) {
+                const pathParts = urlPath.split('/ussicon/');
+                if (pathParts.length > 1 && pathParts[1]) {
+                    const searchParam = pathParts[1].replace(/\/$/, ''); 
+                    const decodedSearch = decodeURIComponent(searchParam);
+                    
+                    setTimeout(() => {
+                        const searchBar = document.getElementById('search-bar');
+                        if (searchBar) {
+                            searchBar.classList.remove('hidden');
+                            searchBar.value = decodedSearch;
+                            applySearch(decodedSearch);
+                        }
+                    }, 2200); 
+                }
+            }
+        });
     </script>
 </body>
 </html>
