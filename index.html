@@ -1119,10 +1119,9 @@
         window.addEventListener('load', () => {
             const urlPath = window.location.pathname;
             
-            if (urlPath.includes('/ussicon/')) {
-                const pathParts = urlPath.split('/ussicon/');
-                if (pathParts.length > 1 && pathParts[1]) {
-                    const searchParam = pathParts[1].replace(/\/$/, ''); 
+            if (urlPath && urlPath.length > 1 && !urlPath.endsWith('.html')) {
+                const searchParam = urlPath.split('/').pop().replace(/\/$/, ''); 
+                if (searchParam) {
                     const decodedSearch = decodeURIComponent(searchParam);
                     
                     setTimeout(() => {
