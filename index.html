@@ -627,7 +627,7 @@
                         ev.stopPropagation(); 
                         
                         const appShortName = (data.name || '').split(' ')[0];
-                        const shareUrl = `https://t3reeworld.vercel.app/ussicon/${encodeURIComponent(appShortName)}`;
+                        const shareUrl = `https://t3reeworld.vercel.app/${encodeURIComponent(appShortName)}`;
                         
                         if (navigator.share) {
                             try {
