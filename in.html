@@ -98,6 +98,10 @@
         #notice-editor img, #viewer-content img { max-width: 100%; border-radius: 5px; margin: 10px 0; display: block; }
         #notice-editor a, #viewer-content a { color: var(--primary); word-break: break-all; }
         #viewer-content { margin-bottom: 20px; font-size: 1rem; line-height: 1.5; }
+        
+        /* Added limits styling */
+        .limit-counter { font-size: 0.8rem; color: #6c757d; text-align: right; margin-top: -5px; margin-bottom: 10px; font-weight: bold; }
+        .notice-counter { margin-top: 5px; margin-bottom: 0px; }
 
         /* New styles for updates */
         .notice-img-container { position: relative; display: block; margin: 10px 0; }
@@ -180,7 +184,6 @@
 </head>
 <body>
 
-    <!-- LOADING SCREEN HTML -->
     <div id="loader-wrapper">
         <svg class="t3-loader-svg" viewBox="0 0 100 100">
             <path class="svg-path-t" d="M 25 35 H 45 M 35 35 V 65"></path>
@@ -192,7 +195,6 @@
         </div>
     </div>
 
-    <!-- LOADING SCREEN SCRIPT (Updated to 5 Seconds) -->
     <script>
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -205,7 +207,6 @@
     <div id="main-panel">
         <header>
             <div class="header-left">
-                <!-- UPDATED: Back Button clicking opens index.html -->
                 <button class="icon-btn" id="btn-back" title="Back" style="margin-right: 10px;" onclick="window.location.href='index.html'">
                     <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
                 </button>
@@ -250,8 +251,11 @@
             <input type="hidden" id="app-id">
             <input type="file" id="app-photo" accept="image/*">
             <img id="preview-img" style="width: 60px; height: 60px; border-radius: 10px; display: none; margin: 10px 0;">
-            <input type="text" id="app-name" placeholder="App Name (e.g., YouTube)">
-            <input type="url" id="app-link" placeholder="Final Link (e.g., https://youtube.com)">
+            
+            <input type="text" id="app-name" placeholder="App Name (e.g., Google)" maxlength="10">
+            <div id="app-name-counter" class="limit-counter">0/10</div>
+
+            <input type="url" id="app-link" placeholder="Final Link (e.g., https://google.com)">
             <div class="modal-actions">
                 <button class="btn btn-danger" id="btn-delete" class="hidden">Delete</button>
                 <button class="btn" id="btn-cancel-app" style="background:#e9ecef; color: var(--text-color);">Cancel</button>
@@ -276,6 +280,8 @@
             </div>
             
             <div id="notice-editor" contenteditable="true" placeholder="Write notice here..."></div>
+            
+            <div id="notice-text-counter" class="limit-counter notice-counter">0/100</div>
             
             <div class="modal-actions">
                 <button class="btn" id="btn-cancel-notice" style="background:#e9ecef; color: var(--text-color); display: flex; align-items: center; justify-content: center; gap: 5px;">
@@ -321,7 +327,12 @@
         const mainPanel = document.getElementById('main-panel');
         const appGrid = document.getElementById('app-grid');
 
-        // NEW: Function to safely increment realtime stats in Firebase
+        // Text tracking elements
+        const appNameInput = document.getElementById('app-name');
+        const appNameCounter = document.getElementById('app-name-counter');
+        const noticeEditor = document.getElementById('notice-editor');
+        const noticeTextCounter = document.getElementById('notice-text-counter');
+
         function incrementStat(appId, key) {
             const statRef = ref(db, 'apps/' + appId + '/' + key);
             get(statRef).then((snapshot) => {
@@ -330,7 +341,6 @@
             });
         }
 
-        // Check if user has already added an app limit via localStorage
         function checkUserAppLimit() {
             if (localStorage.getItem('hasAddedApp') === 'true') {
                 document.getElementById('add-btn').style.display = 'none';
@@ -339,11 +349,9 @@
             }
         }
 
-        // Load Apps and verify user limitation on Page Load
         checkUserAppLimit();
         loadApps();
 
-        // 1. EDIT MODE TOGGLE LOGIC UPDATE
         const btnEdit = document.getElementById('btn-edit');
         const editStatus = document.getElementById('edit-status');
         
@@ -358,7 +366,6 @@
             }
         });
 
-        // 2. LOAD APPS
         function loadApps() {
             const appsRef = ref(db, 'apps');
             onValue(appsRef, (snapshot) => {
@@ -371,7 +378,6 @@
                         if (id === myAppId) {
                             createAppIcon(id, data[id]);
                             
-                            // NEW: Enable and update Realtime Wellbeing Dashboard Stats
                             const wellbeingTool = document.getElementById('wellbeing-tool');
                             if(wellbeingTool) {
                                 wellbeingTool.classList.remove('hidden');
@@ -395,22 +401,35 @@
                 if (isEditMode) {
                     openEditModal(id, data);
                 } else {
-                    incrementStat(id, 'views'); // NEW: Increases App/Icon Visitors Count
-                    openNoticeViewer(data, id); // MODIFIED: Pass ID to handle link clicks
+                    incrementStat(id, 'views'); 
+                    openNoticeViewer(data, id); 
                 }
             });
             appGrid.appendChild(div);
         }
 
-        // 3. ADD / EDIT APP MODAL (Step 1)
+        // UPDATE: App Name Logic & Alerts
+        function updateAppNameCounter() {
+            appNameCounter.innerText = `${appNameInput.value.length}/10`;
+        }
+
+        appNameInput.addEventListener('input', updateAppNameCounter);
+        appNameInput.addEventListener('keydown', (e) => {
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'];
+            if (appNameInput.value.length >= 10 && !allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                alert("Maximum limit of 10 characters reached for App Name!");
+                e.preventDefault();
+            }
+        });
+
         const appModal = document.getElementById('app-modal');
         const noticeBuilderModal = document.getElementById('notice-builder-modal');
-        const noticeEditor = document.getElementById('notice-editor');
         
         document.getElementById('add-btn').addEventListener('click', () => {
             document.getElementById('modal-title').innerText = "Add New Link";
             document.getElementById('app-id').value = "";
             document.getElementById('app-name').value = "";
+            updateAppNameCounter(); // Reset App Name Counter
             document.getElementById('app-link').value = "";
             document.getElementById('app-photo').value = "";
             document.getElementById('preview-img').style.display = "none";
@@ -424,6 +443,7 @@
             document.getElementById('modal-title').innerText = "Edit Link";
             document.getElementById('app-id').value = id;
             document.getElementById('app-name').value = data.name;
+            updateAppNameCounter(); // Update App Name Counter for edit
             document.getElementById('app-link').value = data.link;
             document.getElementById('app-photo').value = "";
             
@@ -472,6 +492,7 @@
             appModal.classList.add('hidden');
             
             noticeEditor.innerHTML = tempAppData.notice || "";
+            updateNoticeCounter(); // Refresh counter on opening Notice Builder
             noticeBuilderModal.classList.remove('hidden');
         });
 
@@ -482,17 +503,54 @@
                 localStorage.removeItem('hasAddedApp'); 
                 localStorage.removeItem('myAppId'); 
                 checkUserAppLimit(); 
-                document.getElementById('wellbeing-tool').classList.add('hidden'); // Hide stats on delete
+                document.getElementById('wellbeing-tool').classList.add('hidden'); 
                 appModal.classList.add('hidden');
             }
         });
 
-        // 4. NOTICE BUILDER MODAL LOGIC (Step 2)
+        // UPDATE: Notice Builder Text Restrictions and Counter
+        function getNoticeTextLength() {
+            return noticeEditor.innerText.replace(/\n/g, "").length;
+        }
+
+        function updateNoticeCounter() {
+            noticeTextCounter.innerText = `${getNoticeTextLength()}/100`;
+        }
+
+        noticeEditor.addEventListener('input', updateNoticeCounter);
+        
+        noticeEditor.addEventListener('keydown', (e) => {
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+            if (getNoticeTextLength() >= 100 && !allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                alert("Maximum limit of 100 characters reached for Notice!");
+                e.preventDefault();
+            }
+        });
+
+        noticeEditor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            let paste = (e.clipboardData || window.clipboardData).getData('text');
+            let currentLen = getNoticeTextLength();
+            let remaining = 100 - currentLen;
+            
+            if (remaining > 0) {
+                let textToInsert = paste.substring(0, remaining);
+                document.execCommand('insertText', false, textToInsert);
+                if (paste.length > remaining) {
+                    alert("Maximum limit of 100 characters reached! Extra text was removed.");
+                }
+            } else {
+                alert("Maximum limit of 100 characters reached for Notice!");
+            }
+            updateNoticeCounter();
+        });
+
         function insertAtCursor(html) {
             noticeEditor.focus();
             if(!document.execCommand('insertHTML', false, html)) {
                 noticeEditor.innerHTML += html; 
             }
+            updateNoticeCounter(); // Refresh after inserting link/img
         }
 
         document.getElementById('btn-cancel-notice').addEventListener('click', () => {
@@ -500,7 +558,12 @@
             appModal.classList.remove('hidden'); 
         });
 
+        // UPDATE: Check Notice Image Limits
         document.getElementById('btn-notice-img').addEventListener('click', () => {
+            if (noticeEditor.querySelectorAll('img').length >= 1) {
+                alert("You can only add a maximum of 1 image in the notice!");
+                return;
+            }
             document.getElementById('notice-img-input').click();
         });
 
@@ -510,14 +573,19 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const b64 = event.target.result;
-                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove()">&times;</button></div>`);
+                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove(); document.getElementById('notice-text-counter').innerText = document.getElementById('notice-editor').innerText.replace(/\\n/g, '').length + '/100';">&times;</button></div>`);
                 };
                 reader.readAsDataURL(file);
             }
             e.target.value = ""; 
         });
 
+        // UPDATE: Check Notice Link Limits
         document.getElementById('btn-notice-link').addEventListener('click', () => {
+            if (noticeEditor.querySelectorAll('a').length >= 3) {
+                alert("You can only add a maximum of 3 links in the notice!");
+                return;
+            }
             const url = prompt("Enter the URL to insert in notice:");
             if (url) {
                 insertAtCursor(`<a href="${url}" target="_blank">${url}</a>`);
@@ -532,12 +600,11 @@
                 link: tempAppData.link,
                 photo: tempAppData.photo,
                 notice: tempAppData.notice,
-                views: tempAppData.id ? undefined : 0, // Set defaults only on creation
+                views: tempAppData.id ? undefined : 0, 
                 clicks: tempAppData.id ? undefined : 0
             };
 
             if (tempAppData.id) {
-                // If updating, preserve old stats by omitting them
                 delete finalData.views;
                 delete finalData.clicks;
                 update(ref(db, 'apps/' + tempAppData.id), finalData);
@@ -552,18 +619,22 @@
             
             noticeBuilderModal.classList.add('hidden');
             tempAppData = {}; 
+            
+            // UPDATE: 3 Second Redirect back to main page (index.html)
+            alert("App Published Successfully! Redirecting in 3 seconds...");
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
         });
 
-        // 5. NOTICE VIEWER (Display to User)
         const noticeViewerModal = document.getElementById('notice-viewer-modal');
         const viewerContent = document.getElementById('viewer-content');
         const viewerLinkBtn = document.getElementById('viewer-link-btn');
 
-        // MODIFIED: Accepts ID so click analytics logic executes safely
         function openNoticeViewer(data, id) {
             viewerContent.innerHTML = data.notice || "<p>No notice provided.</p>";
             viewerLinkBtn.onclick = () => {
-                if(id) incrementStat(id, 'clicks'); // NEW: Increases Link Click Count
+                if(id) incrementStat(id, 'clicks'); 
                 window.open(data.link, '_blank');
             };
             noticeViewerModal.classList.remove('hidden');
