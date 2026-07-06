@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="logo.jpg?v=1.1">
+    <link rel="apple-touch-icon" sizes="192x192" href="logo.jpg?v=1.1">
+    <link rel="manifest" href="manifest.json">
+    <title>T3 | website hub</title>
+    <!-- Chart.js for Dashboard Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Light Theme Colors (Legacy) */
+            --bg-color: #f4f7f6;
+            --panel-bg: #ffffff;
+            --text-color: #2b2d42;
+            --primary: #4361ee;
+            --danger: #ef233c;
+            --success: #06d6a0;
+            --shadow-sm: 0 4px 12px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 30px rgba(0,0,0,0.12);
+            --accent-color: #4361ee;
+        }
+
+        /* Dark Theme overrides auto injected */
+        @media (prefers-color-scheme: dark) {
+            body.auto-dark {
+                --bg-color: #1a1a2e;
+                --panel-bg: #161625;
+                --text-color: #e0e0e0;
+                --shadow-sm: 0 4px 12px rgba(0,0,0,0.3);
+                --shadow-md: 0 10px 30px rgba(0,0,0,0.5);
+            }
+        }
+        
+        /* Manual Dark Mode Override */
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --panel-bg: #161625;
+            --text-color: #e0e0e0;
+            --shadow-sm: 0 4px 12px rgba(0,0,0,0.3);
+            --shadow-md: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Animated Background */
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: var(--text-color); 
+            transition: all 0.3s ease;
+            background: linear-gradient(-45deg, var(--bg-color), #e0eafc, #cfdef3, var(--panel-bg));
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Utility */
+        .hidden { display: none !important; }
+        .btn { padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: all 0.3s ease; font-size: 0.95rem; }
+        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: var(--primary); }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #dcdcdc; background: var(--panel-bg); color: var(--text-color); transition: all 0.3s ease; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15); }
+        
+        /* Screens */
+        #login-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: transparent; }
+        #login-box { background: var(--panel-bg); padding: 40px 30px; border-radius: 20px; text-align: center; width: 320px; box-shadow: var(--shadow-md); animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        /* Main Panel */
+        #main-panel { display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .header-left, .header-right { display: flex; gap: 15px; align-items: center; }
+        .icon-btn { background: none; border: none; color: var(--text-color); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease, color 0.2s; padding: 5px; }
+        .icon-btn:hover { transform: scale(1.15); color: var(--primary); }
+        .edit-active { color: #f5b700; transform: scale(1.15); }
+
+        /* Search Bar Wrapper */
+        .search-wrapper { display: flex; align-items: center; gap: 5px; }
+        #search-bar { padding: 8px 15px; border-radius: 20px; border: 1px solid #dcdcdc; width: 160px; font-size: 0.9rem; background: rgba(255, 255, 255, 0.9); margin: 0; color: #000; }
+
+        /* Category Chips Area */
+        .category-container { display: flex; gap: 10px; padding: 10px 25px; overflow-x: auto; scrollbar-width: none; }
+        .category-container::-webkit-scrollbar { display: none; }
+        .chip { padding: 8px 16px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.6); border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; white-space: nowrap; transition: all 0.3s; color: var(--text-color); }
+        .chip.active { background: var(--primary); color: white; }
+
+        /* Shelf Sections */
+        .shelf-title { font-size: 1.1rem; font-weight: 700; padding: 10px 25px 0 25px; margin: 5px 0; color: var(--text-color); display: flex; align-items: center; gap: 8px; }
+
+        /* Grid & App Icons */
+        #app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; padding: 15px 25px 25px 25px; }
+        
+        .app-icon { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            cursor: pointer; 
+            text-align: center; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        /* Animated App Icons Feature */
+        .app-icon:hover { 
+            transform: translateY(-8px) scale(1.05) rotate(1deg); 
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 12px 25px rgba(67, 97, 238, 0.15);
+            border-color: var(--primary);
+        }
+        
+        .app-img { 
+            width: 65px; 
+            height: 65px; 
+            border-radius: 18px; 
+            object-fit: cover; 
+            background: #fff; 
+            margin-bottom: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+            transition: all 0.3s ease; 
+            border: 2px solid transparent; 
+        }
+        
+        .app-icon:hover .app-img { 
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.25); 
+            transform: scale(1.05);
+        }
+        
+        .app-name { 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            word-break: break-word; 
+            color: var(--text-color); 
+            letter-spacing: 0.3px;
+        }
+
+        /* Live Update Badge */
+        .live-badge { position: absolute; top: 5px; left: 5px; background: #ff4757; color: white; font-size: 0.6rem; font-weight: bold; padding: 2px 5px; border-radius: 5px; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        /* Skeleton Animation */
+        .skeleton-icon { width: 100px; height: 120px; background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 75%); background-size: 200% 100%; animation: loadingSkeleton 1.5s infinite; border-radius: 20px; }
+        @keyframes loadingSkeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Floating Add Button */
+        #add-btn { position: fixed; bottom: 35px; right: 35px; width: 65px; height: 65px; border-radius: 50%; background: var(--primary); color: white; font-size: 2.2rem; border: none; cursor: pointer; box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4); display: flex; justify-content: center; align-items: center; z-index: 100; transition: all 0.3s ease; animation: float 3s ease-in-out infinite; }
+        #add-btn:hover { background: #324fc2; transform: scale(1.1); animation: none; }
+
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        /* Modals */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--panel-bg); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow-md); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; gap: 12px; }
+        
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .modal-cross-btn { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.05); border-radius: 50%; width: 32px; height: 32px; border: none; color: var(--text-color); font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        
+        /* Network Indicator Style */
+        #network-status { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; z-index: 10000; font-weight: bold; color: white; display: none; }
+        
+        /* Star Rating UI */
+        .stars { display: flex; gap: 5px; margin: 10px 0; font-size: 1.5rem; color: #ccc; cursor: pointer; }
+        .stars span.active { color: #f5b700; }
+
+        /* Dynamic Media Elements inside notice */
+        .media-notice { width: 100%; border-radius: 12px; margin-top: 10px; background: #000; }
+
+        /* Comments Engine UI */
+        .comment-section { margin-top: 20px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 15px; }
+        .comment-box { display: flex; gap: 10px; margin-bottom: 10px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 8px; font-size: 0.9rem; }
+
+        /* Fixed Slider CSS */
+        #slider-container { width: 100%; aspect-ratio: 16 / 9; height: auto; flex-shrink: 0; background: rgba(255,255,255,0.5); backdrop-filter: blur(5px); position: relative; overflow: hidden; display: none; box-shadow: inset 0 -4px 10px rgba(0,0,0,0.02); }
+        #slider-track { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        #slider-track::-webkit-scrollbar { display: none; }
+        .slide { flex: 0 0 100%; height: 100%; scroll-snap-align: center; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        .slide-edit-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(3px); display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; z-index: 10; }
+
+        /* Loader */
+        #loader-wrapper { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(-45deg, #f4f7f6, #e0eafc, #cfdef3, #eef2f3); background-size: 400% 400%; animation: gradientBG 15s ease infinite; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s ease, visibility 0.6s ease; }
+        .loader-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .t3-loader-svg { width: 130px; height: 130px; animation: float-svg 3s ease-in-out infinite; }
+        @keyframes float-svg { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+        .svg-path-t, .svg-path-3 { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 150; stroke-dashoffset: 150; animation: draw-t3 2.5s ease-in-out infinite alternate; }
+        .svg-path-t { stroke: #4361ee; } .svg-path-3 { stroke: #ef233c; animation-delay: 0.3s; }
+        @keyframes draw-t3 { 0% { stroke-dashoffset: 150; } 100% { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body class="auto-dark">
+
+    <!-- Network Indicator Badge -->
+    <div id="network-status"></div>
+
+    <!-- Preloader Engine -->
+    <div id="loader-wrapper">
+        <svg class="t3-loader-svg" viewBox="0 0 100 100">
+            <path class="svg-path-t" d="M 25 35 H 45 M 35 35 V 65"></path>
+            <path class="svg-path-3" d="M 55 35 Q 75 35 65 50 Q 80 50 55 65"></path>
+        </svg>
+        <div class="loader-bottom-logo">
+            <img src="https://i.ibb.co/Xf6rYcCC/Dofoto-20260703-071203550.png" alt="logo" height="100" style="border-radius:8px;">
+        </div>
+    </div>
+
+    <!-- Firebase Auth / Verification Screen -->
+    <div id="login-screen" class="hidden">
+        <div id="login-box">
+            <img src="https://i.ibb.co/qLpK0jBd/Dofoto-20260630-121306196.png" alt="T3" style="height: 55px; margin-bottom: 10px; border-radius: 8px;">
+            
+            <!-- Standard Email/Password + Google Container -->
+            <div id="firebase-auth-container">
+                <input type="email" id="auth-email" placeholder="Email Address">
+                <input type="password" id="auth-password" placeholder="Password">
+                <button class="btn btn-primary" id="btn-email-login" style="width: 100%; margin-top: 5px;">Sign In with Email</button>
+                <button class="btn btn-success" id="btn-email-register" style="width: 100%; margin-top: 5px;">Register Account</button>
+                <button class="btn btn-danger" id="btn-google-login" style="width: 100%; margin-top: 5px; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    Google Login
+                </button>
+                <p style="margin-top:10px; font-size:0.8rem; cursor:pointer; color:var(--primary);" id="btn-recover-pass">Forgot Password?</p>
+            </div>
+
+            <hr style="margin: 15px 0; opacity: 0.2;">
+            <p style="color: #6c757d; font-size: 0.85rem; margin-top: 5px;">Legacy 8-digit password bypass:</p>
+            <input type="password" id="login-pass" maxlength="8" placeholder="********">
+            <button class="btn" style="width: 100%; background: #6c757d;" id="btn-login">Open Legacy View</button>
+        </div>
+    </div>
+
+    <!-- Main Dynamic Application Screen -->
+    <div id="main-panel" class="hidden">
+        <header>
+            <div class="header-left">
+                <button class="icon-btn" id="btn-back" title="Back">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <img src="https://i.ibb.co/qLpK0jBd/Dofoto-20260630-121306196.png" alt="T3" style="height: 32px; border-radius: 4px;">
+                
+                <!-- Online Users Live Counter Badge -->
+                <span id="live-users-counter" style="background:#06d6a0; color:white; font-size:0.75rem; padding:2px 8px; border-radius:10px; font-weight:bold;">Online: 1</span>
+            </div>
+            
+            <div class="header-right">
+                <!-- Theme / Accent Color Changer Trigger -->
+                <input type="color" id="accent-color-picker" style="width:30px; height:30px; padding:0; border:none; border-radius:50%; cursor:pointer;" title="Change Accent Color">
+                
+                <!-- Multi-Language Selector Toggle -->
+                <button class="icon-btn" id="btn-lang-toggle" title="Switch Language">🇮🇳/🇬🇧</button>
+
+                <!-- Voice Search Trigger -->
+                <button class="icon-btn" id="btn-voice-search" title="Voice Search">🎙️</button>
+
+                <div class="search-wrapper">
+                    <input type="text" id="search-bar" class="hidden" placeholder="Search webs...">
+                    <button class="icon-btn" id="btn-search" title="Search">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                </div>
+                
+                <button class="icon-btn" id="btn-notification" title="Notifications" style="position: relative;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span id="notif-badge" class="hidden" style="position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; border: 2px solid #fff;"></span>
+                </button>
+                
+                <button class="icon-btn" id="btn-dashboard-view" title="Analytics Dashboard">📊</button>
+                <button class="icon-btn" id="btn-profile-view" title="User Profile">👤</button>
+                <button class="icon-btn hidden" id="btn-edit" title="Edit Mode">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                <button class="icon-btn hidden" id="btn-settings" title="Settings">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Slider Native Panel Container -->
+        <div id="slider-container">
+            <div id="slider-track"></div>
+            <input type="file" id="slider-img-input" accept="image/*" class="hidden">
+        </div>
+
+        <!-- 📂 Advanced Dynamic Filters / Category Row Expansion -->
+        <div class="category-container" id="category-chips-row">
+            <div class="chip active" data-cat="all">All Channels</div>
+            <div class="chip" data-cat="Education">Education</div>
+            <div class="chip" data-cat="Social">Social</div>
+            <div class="chip" data-cat="AI">AI</div>
+            <div class="chip" data-cat="Tools">Tools</div>
+            <div class="chip" data-cat="Games">Games</div>
+            <div class="chip" data-cat="Favorites">❤️ Favorites</div>
+        </div>
+
+        <!-- 🕒 Recently Opened Display Bar -->
+        <div class="shelf-title" id="recent-shelf-title">🕒 Recently Opened Apps</div>
+        <div class="category-container" id="recent-apps-row" style="min-height: 40px;"></div>
+
+        <!-- 🤖 AI Smart Recommendation Bar -->
+        <div class="shelf-title" id="ai-reco-title">🤖 Recommended for You</div>
+        <div class="category-container" id="ai-recommendation-row" style="min-height: 40px;"></div>
+
+        <!-- 🏆 Popular Leaderboard Segment -->
+        <div class="shelf-title" id="leaderboard-title">🏆 Popular Apps Leaderboard</div>
+        <div class="category-container" id="leaderboard-apps-row" style="min-height: 40px;"></div>
+
+        <!-- Dynamic Content Distribution Grid Elements -->
+        <div class="shelf-title" id="all-apps-title">📱 All Available Dash-Apps</div>
+        <div id="app-grid"></div>
+
+        <button id="add-btn" class="hidden">+</button>
+    </div>
+
+    <!-- User Profile Configuration Modal -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-cross-btn" onclick="document.getElementById('profile-modal').classList.add('hidden')">&times;</button>
+            <h3 style="color:var(--primary);" id="txt-prof-head">👤 Setup Identity Profile</h3>
+            <div style="text-align:center;">
+                <input type="file" id="profile-avatar-input" accept="image/*" class="hidden">
+                <img src="" id="profile-avatar-preview" style="width:80px; height:80px; border-radius:50%; background:#ccc; cursor:pointer; object-fit:cover;" onclick="document.getElementById('profile-avatar-input').click()">
+                <p style="font-size:0.8rem; color:#6c757d;">Tap image to upload avatar</p>
+            </div>
+            <input type="text" id="profile-display-name" placeholder="Full Display Name">
+            <textarea id="profile-bio" placeholder="Write a brief profile description / bio..."></textarea>
+            <button class="btn btn-primary" id="btn-save-profile" style="width:100%;">Save Profile State</button>
+        </div>
+    </div>
+
+    <!-- Admin Comprehensive Dashboard Analytics Display Window -->
+    <div id="dashboard-modal" class="modal hidden">
+        <div class="modal-content" style="max-width:600px;">
+            <button class="modal-cross-btn" onclick="document.getElementById('dashboard-modal').classList.add('hidden')">&times;</button>
+            <h3 style="color:var(--primary);">📈 Live Core System Metrics Panel</h3>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1; background:rgba(0,0,0,0.04); padding:10px; border-radius:8px; text-align:center;">
+                    <h5 style="margin:0;">Total Views</h5>
+                    <p id="stat-total-views" style="font-size:1.5rem; font-weight:bold; margin:5px 0;">0</p>
+                </div>
+                <div style="flex:1; background:rgba(0,0,0,0.04); padding:10px; border-radius:8px; text-align:center;">
+                    <h5 style="margin:0;">Total Clicks</h5>
+                    <p id="stat-total-clicks" style="font-size:1.5rem; font-weight:bold; margin:5px 0;">0</p>
+                </div>
+                <div style="flex:1; background:rgba(0,0,0,0.04); padding:10px; border-radius:8px; text-align:center;">
+                    <h5 style="margin:0;">Average CTR</h5>
+                    <p id="stat-avg-ctr" style="font-size:1.5rem; font-weight:bold; margin:5px 0;">0%</p>
+                </div>
+            </div>
+
+            <canvas id="ctrChart" width="400" height="200"></canvas>
+            
+            <hr style="margin:15px 0; opacity:0.1;">
+            <h4>🛡️ Core Administrative Audit Log</h4>
+            <div id="admin-log-terminal" style="background:#000; color:#0f0; font-family:monospace; padding:10px; border-radius:8px; max-height:120px; overflow-y:auto; font-size:0.75rem;"></div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="btn-link-checker">🚫 Run Integrity Scan</button>
+                <button class="btn btn-success" id="btn-export-db">📤 Export App Set JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal Container Component -->
+    <div id="notification-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px; padding-top: 15px;">
+            <button id="btn-close-notification" class="modal-cross-btn" title="Close">&times;</button>
+            <h3 style="margin-top: 5px; margin-bottom: 20px; color: var(--primary); text-align: center;" id="txt-notif-title">Notifications</h3>
+            <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- App Metadata Creation/Edit Overlay Module (Step 1) -->
+    <div id="app-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-top: 0; color: var(--primary);">Add New Link</h3>
+            
+            <div style="background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px; border: 1px dashed #dcdcdc; margin: 10px 0; text-align: center;">
+                <label for="app-photo" style="cursor: pointer; color: var(--primary); font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0;">Upload App Icon</label>
+                <input type="file" id="app-photo" accept="image/*" style="display: none;">
+                <img id="preview-img" style="width: 70px; height: 70px; border-radius: 15px; display: none; margin: 10px auto; object-fit: cover;">
+            </div>
+
+            <input type="hidden" id="app-id">
+            <input type="text" id="app-name" placeholder="App Name (e.g., YouTube)">
+            <input type="url" id="app-link" placeholder="Final Link (e.g., https://youtube.com)">
+            
+            <!-- Category Tag Target Select Elements -->
+            <label style="font-size:0.8rem; font-weight:bold;">Categorize Resource Node Container Mapping</label>
+            <select id="app-category-select">
+                <option value="Education">Education</option>
+                <option value="Social">Social</option>
+                <option value="AI">AI</option>
+                <option value="Tools">Tools</option>
+                <option value="Games">Games</option>
+            </select>
+
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="btn-delete">Delete</button>
+                <button class="btn" id="btn-cancel-app" style="background:#e9ecef; color: #495057;">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-app" style="flex: 1;">Next (Notice Configuration)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Rich Text & Interactive Media Builder (Step 2) -->
+    <div id="notice-builder-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="margin-top: 0; color: var(--primary);">Create/Edit Notice</h3>
+            
+            <div class="toolbar">
+                <button id="btn-notice-img">📷 Add Image</button>
+                <button id="btn-notice-link">🔗 Add Link</button>
+                <input type="file" id="notice-img-input" accept="image/*" class="hidden">
+            </div>
+            
+            <div id="notice-editor" contenteditable="true" placeholder="Write notice content details here..."></div>
+
+            <!-- Notice Configuration Constraints -->
+            <label style="font-size:0.8rem; font-weight:bold; margin-top:10px; display:block;">Optional External Video Embed URL (YouTube/Direct MP4)</label>
+            <input type="url" id="notice-video-url" placeholder="https://www.youtube.com/embed/...">
+
+            <label style="font-size:0.8rem; font-weight:bold; display:block;">Optional Notice Audio Track URL (MP3/Podcast)</label>
+            <input type="url" id="notice-audio-url" placeholder="https://example.com/audio.mp3">
+
+            <label style="font-size:0.8rem; font-weight:bold; display:block;">Optional Associated PDF Notice Document Attachment Link</label>
+            <input type="url" id="notice-pdf-url" placeholder="https://example.com/document.pdf">
+
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label style="font-size:0.75rem; font-weight:bold;">📅 Scheduled Display Start</label>
+                    <input type="datetime-local" id="notice-schedule-date">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.75rem; font-weight:bold;">⏳ Absolute Expiry Ceiling</label>
+                    <input type="datetime-local" id="notice-expiry-date">
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn" id="btn-cancel-notice" style="background:#e9ecef; color: #495057;">Back</button>
+                <button class="btn btn-success" id="btn-save-final" style="flex: 1; margin-left: 10px;">Save & Publish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contextual Viewer Presentation Frame Module Engine -->
+    <div id="notice-viewer-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <button id="btn-close-viewer" class="modal-cross-btn" title="Close">&times;</button>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-right:20px;">
+                <h3 id="viewer-title" style="color: var(--primary); margin:0;">Notice</h3>
+                <button id="btn-fav-toggle" style="background:none; border:none; font-size:1.4rem; cursor:pointer;" title="Bookmark/Favorite">🤍</button>
+            </div>
+
+            <!-- Dynamic Presentation Injection Viewports -->
+            <div id="viewer-video-container"></div>
+            <div id="viewer-audio-container"></div>
+            
+            <div id="viewer-content" style="margin:15px 0;"></div>
+            
+            <div id="viewer-pdf-container"></div>
+
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#6c757d; margin-bottom:10px;">
+                <span id="lbl-view-count">👀 Views: 0</span>
+                <span id="lbl-share-count">🤝 Shares: 0</span>
+            </div>
+            
+            <button id="viewer-link-btn" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 15px; margin-top: 5px;">Open Final Link</button>
+            
+            <!-- Dynamic Inline Sharing QR Core Frame Canvas Display Area -->
+            <div style="text-align:center; margin-top:15px;">
+                <button class="btn btn-success" id="btn-qr-share-gen" style="padding:5px 10px; font-size:0.8rem;">Show Access QR Code Link</button>
+                <div id="qr-code-injection-space" style="margin-top:10px; display:flex; justify-content:center;"></div>
+            </div>
+
+            <!-- Multi-Thread Realtime Comment Configuration Node Integration Engine -->
+            <div class="comment-section">
+                <h4>💬 Interactive Discussion Board</h4>
+                <div id="comments-render-loop" style="max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="comment-input-field" placeholder="Add a public comment transparently..." style="margin:0;">
+                    <button class="btn btn-primary" id="btn-post-comment" style="padding:10px;">Send</button>
+                </div>
+            </div>
+
+            <!-- Five-Star Scoring Evaluation Core Subsystem Component -->
+            <div style="margin-top:15px; border-top:1px solid rgba(0,0,0,0.1); padding-top:10px; text-align:center;">
+                <label style="font-weight:bold; font-size:0.85rem;" id="txt-rate-head">Rate This Application Engine Context</label>
+                <div class="stars" id="star-rating-row" style="justify-content:center;">
+                    <span data-rating="1">★</span><span data-rating="2">★</span><span data-rating="3">★</span><span data-rating="4">★</span><span data-rating="5">★</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Change Security Access Engine Parameter Settings View -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: var(--primary);">Change Password</h3>
+            <input type="email" id="set-email" placeholder="Email Address">
+            <input type="password" id="set-old-pass" placeholder="Old Password">
+            <input type="password" id="set-new-pass" maxlength="8" placeholder="New 8-digit Password">
+            
+            <hr style="margin:15px 0; opacity:0.1;">
+            <h4>📥 Database Import Deployment Engine</h4>
+            <input type="file" id="import-db-input" accept=".json">
+
+            <div class="modal-actions">
+                <button class="btn" id="btn-cancel-settings" style="background:#e9ecef; color: #495057;">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-settings" style="flex: 1;">Update Parameters</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Register Improved Advanced PWA Progressive Strategy Engine Caching Strategy
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => console.log('Upgraded High-Performance Engine SW Activation Registered!', reg))
+                    .catch(err => console.error('SW Execution Exception Log Output Blocked:', err));
+            });
+        }
+        
+        // Multi-Modular Declarations Initialization Framework
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, set, push, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Core Secure Legacy Matching Configuration Parameters[span_2](start_span)[span_2](end_span)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCOdF10p3WVV5XDE8jnzttzw3VnZJU-bXU",
+            authDomain: "game-b37ee.firebaseapp.com",
+            databaseURL: "https://game-b37ee-default-rtdb.firebaseio.com",
+            projectId: "game-b37ee",
+            storageBucket: "game-b37ee.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Engine State Memory Declarations
+        let currentPassword = "12345678"; 
+        let isEditMode = false;
+        let base64Image = "";
+        let tempAppData = {}; 
+        let activeCategoryFilter = "all";
+        let localUserIdentityToken = null;
+        let activeViewerApplicationContextID = null;
+        let globalSystemLanguageState = "EN";
+        let dashboardChartInstance = null;
+
+        // Translation Maps Dictionaries For Localization
+        const languagePacks = {
+            EN: {
+                recent: "🕒 Recently Opened Apps",
+                reco: "🤖 Recommended for You",
+                leader: "🏆 Popular Apps Leaderboard",
+                all: "📱 All Available Dash-Apps",
+                prof: "👤 Setup Identity Profile",
+                rate: "Rate This Application Engine Context"
+            },
+            HI: {
+                recent: "🕒 हाल ही में खोले गए ऐप्स",
+                reco: "🤖 आपके लिए अनुशंसित ऐप्स",
+                leader: "🏆 लोकप्रिय ऐप्स लीडरबोर्ड",
+                all: "📱 सभी उपलब्ध ऐप्स सूची",
+                prof: "👤 अपनी प्रोफ़ाइल सेट करें",
+                rate: "इस ऐप को रेटिंग प्रदान करें"
+            }
+        };
+
+        // UI View Layout Component Target Hooks
+        const loginScreen = document.getElementById('login-screen');
+        const mainPanel = document.getElementById('main-panel');
+        const appGrid = document.getElementById('app-grid');
+        
+        // Network Performance & Status Monitoring Verification Pipeline
+        function monitorNetworkStatusEngine() {
+            const statusIndicator = document.getElementById("network-status");
+            function configureStateBadge(isOnline) {
+                if (isOnline) {
+                    statusIndicator.style.background = "#06d6a0";
+                    statusIndicator.innerText = "⚡ Network Engine Online Connection Reestablished";
+                    setTimeout(() => { statusIndicator.style.display = "none"; }, 3000);
+                } else {
+                    statusIndicator.style.background = "#ef233c";
+                    statusIndicator.innerText = "📡 Connection Terminated. Operating on PWA Offline Cache Storage Data";
+                    statusIndicator.style.display = "block";
+                }
+            }
+            window.addEventListener('online', () => configureStateBadge(true));
+            window.addEventListener('offline', () => configureStateBadge(false));
+        }
+        monitorNetworkStatusEngine();
+
+        // Presence Logic Engine Calculation Implementation
+        function processUserPresenceCounter() {
+            const onlineCounterRef = ref(db, 'realtime_presence_metrics/' + Math.floor(Math.random() * 1000000));
+            const connectionsCountRef = ref(db, 'realtime_presence_metrics');
+            
+            const connectedRef = ref(db, '.info/connected');
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    onDisconnect(onlineCounterRef).remove();
+                    set(onlineCounterRef, true);
+                }
+            });
+
+            onValue(connectionsCountRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const count = Object.keys(snapshot.val()).length;
+                    document.getElementById("live-users-counter").innerText = `Online: ${count}`;
+                }
+            });
+        }
+        processUserPresenceCounter();
+
+        // Atomic Statistics Value Increment Dispatcher
+        function incrementStat(appId, key) {
+            const statRef = ref(db, 'apps/' + appId + '/' + key);
+            get(statRef).then((snapshot) => {
+                const currentVal = snapshot.val() || 0;
+                set(ref(db, 'apps/' + appId + '/' + key), currentVal + 1);
+            });
+        }
+
+        // Operational Audit Database Activity Structural Logging Engine
+        function dispatchAuditLogEntry(actor, operationalIntent) {
+            const logRef = ref(db, 'admin_activity_log');
+            push(logRef, {
+                timestamp: Date.now(),
+                actor: actor,
+                intent: operationalIntent
+            });
+        }
+
+        // Secure Initialization Authorization Extraction Framework (Legacy Integration Validation)[span_3](start_span)[span_3](end_span)
+        const passRef = ref(db, 'admin/password');
+        get(passRef).then((snapshot) => {
+            if (snapshot.exists()) { currentPassword = snapshot.val(); }
+            else { set(passRef, "12345678"); }
+        });
+
+        // Application State Pipeline Watch Hook
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                localUserIdentityToken = user;
+                loginScreen.classList.add('hidden');
+                mainPanel.classList.remove('hidden');
+                syncProfileIdentityViewState();
+                loadAppsEngineLoop();
+            } else {
+                loginScreen.classList.remove('hidden');
+                mainPanel.classList.add('hidden');
+            }
+            // Close core preloader interface view
+            document.getElementById('loader-wrapper').classList.add('loader-hidden');
+        });
+
+        // Firebase Auth Core Strategy Interface Bindings
+        document.getElementById("btn-email-login").addEventListener("click", () => {
+            const email = document.getElementById("auth-email").value;
+            const pass = document.getElementById("auth-password").value;
+            if(!email || !pass) return alert("Fill credentials completely.");
+            signInWithEmailAndPassword(auth, email, pass).catch(err => alert(err.message));
+        });
+
+        document.getElementById("btn-email-register").addEventListener("click", () => {
+            const email = document.getElementById("auth-email").value;
+            const pass = document.getElementById("auth-password").value;
+            if(!email || !pass) return alert("Fill credentials completely.");
+            createUserWithEmailAndPassword(auth, email, pass)
+                .then(() => dispatchAuditLogEntry(email, "New Account Registered Via Web Form Engine Client Interface"))
+                .catch(err => alert(err.message));
+        });
+
+        document.getElementById("btn-google-login").addEventListener("click", () => {
+            signInWithPopup(auth, googleProvider)
+                .then((res) => dispatchAuditLogEntry(res.user.email, "Google Authentication Account Access Success Sync"))
+                .catch(err => alert(err.message));
+        });
+
+        document.getElementById("btn-recover-pass").addEventListener("click", () => {
+            const email = document.getElementById("auth-email").value;
+            if(!email) return alert("Input target email destination to send password reset transmission protocol.");
+            sendPasswordResetEmail(auth, email).then(() => alert("Password reset route protocol dispatched to targets email inbox.")).catch(err => alert(err.message));
+        });
+
+        // 1. LEGACY PASS BACKWARD PASS ENGINE CLONE[span_4](start_span)[span_4](end_span)
+        document.getElementById('btn-login').addEventListener('click', () => {
+            const inputPass = document.getElementById('login-pass').value;
+            if(inputPass === currentPassword && inputPass.length === 8) {
+                loginScreen.classList.add('hidden');
+                mainPanel.classList.remove('hidden');
+                loadAppsEngineLoop();
+            } else {
+                alert("Incorrect Password or not 8 digits!");
+            }
+        });
+
+        document.getElementById('btn-back').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                mainPanel.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+                document.getElementById('login-pass').value = '';
+            });
+        });
+
+        // Dynamic System Multi-Language UI Transformer Implementation Execution Routine
+        document.getElementById("btn-lang-toggle").addEventListener("click", () => {
+            globalSystemLanguageState = (globalSystemLanguageState === "EN") ? "HI" : "EN";
+            document.getElementById("recent-shelf-title").innerText = languagePacks[globalSystemLanguageState].recent;
+            document.getElementById("ai-reco-title").innerText = languagePacks[globalSystemLanguageState].reco;
+            document.getElementById("leaderboard-title").innerText = languagePacks[globalSystemLanguageState].leader;
+            document.getElementById("all-apps-title").innerText = languagePacks[globalSystemLanguageState].all;
+            document.getElementById("txt-prof-head").innerText = languagePacks[globalSystemLanguageState].prof;
+            document.getElementById("txt-rate-head").innerText = languagePacks[globalSystemLanguageState].rate;
+        });
+
+        // Accent Theme Custom Color Configuration Engine Implementation Interface Hook
+        document.getElementById("accent-color-picker").addEventListener("input", (e) => {
+            const selectedColor = e.target.value;
+            document.documentElement.style.setProperty('--primary', selectedColor);
+        });
+
+        // 👤 User Identity Management Profile Operations Engine
+        document.getElementById("btn-profile-view").addEventListener("click", () => {
+            document.getElementById("profile-modal").classList.remove("hidden");
+        });
+
+        document.getElementById("profile-avatar-input").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById("profile-avatar-preview").src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById("btn-save-profile").addEventListener("click", () => {
+            if(!localUserIdentityToken) return alert("Must sign into session storage node via active framework authorization engine map.");
+            const name = document.getElementById("profile-display-name").value;
+            const bio = document.getElementById("profile-bio").value;
+            const pic = document.getElementById("profile-avatar-preview").src;
+
+            set(ref(db, 'user_profiles/' + localUserIdentityToken.uid), {
+                displayName: name,
+                bio: bio,
+                avatar: pic
+            }).then(() => {
+                alert("Profile memory snapshot state committed successfully.");
+                document.getElementById("profile-modal").classList.add("hidden");
+            });
+        });
+
+        function syncProfileIdentityViewState() {
+            if(!localUserIdentityToken) return;
+            get(ref(db, 'user_profiles/' + localUserIdentityToken.uid)).then((snap) => {
+                if(snap.exists()) {
+                    const data = snap.val();
+                    document.getElementById("profile-display-name").value = data.displayName || "";
+                    document.getElementById("profile-bio").value = data.bio || "";
+                    document.getElementById("profile-avatar-preview").src = data.avatar || "";
+                }
+            });
+        }
+
+        // Advanced Search Processing Engine Core Module Engine Mapping
+        document.getElementById('btn-search').addEventListener('click', () => {
+            const sBar = document.getElementById('search-bar');
+            sBar.classList.toggle('hidden');
+            if (!sBar.classList.contains('hidden')) { sBar.focus(); } 
+            else { sBar.value = ''; executeGridSearchFilteringEngine(''); }
+        });
+
+        document.getElementById('search-bar').addEventListener('input', (e) => {
+            executeGridSearchFilteringEngine(e.target.value);
+        });
+
+        // Integrated Voice Recognition Parsing Framework Module Pipeline
+        document.getElementById("btn-voice-search").addEventListener("click", () => {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return alert("Voice speech diagnostics API unrendered or unsupported inside legacy browser instance.");
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.start();
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const sb = document.getElementById("search-bar");
+                sb.classList.remove("hidden");
+                sb.value = transcript;
+                executeGridSearchFilteringEngine(transcript);
+            };
+        });
+
+        // 📂 Unified Complex Master Array Filtering Logic Architecture
+        function executeGridSearchFilteringEngine(query) {
+            query = query.toLowerCase();
+            const allIcons = document.querySelectorAll('#app-grid .app-icon');
+            let favoriteList = JSON.parse(localStorage.getItem('t3_favorites_pool') || '[]');
+
+            allIcons.forEach(icon => {
+                const name = icon.getAttribute('data-name') || '';
+                const cat = icon.getAttribute('data-cat') || '';
+                const id = icon.getAttribute('data-id') || '';
+
+                let statusMatch = name.includes(query);
+                let categoryMatch = (activeCategoryFilter === "all" || cat === activeCategoryFilter);
+                
+                if (activeCategoryFilter === "Favorites") {
+                    categoryMatch = favoriteList.includes(id);
+                }
+
+                if (statusMatch && categoryMatch) { icon.style.display = 'flex'; } 
+                else { icon.style.display = 'none'; }
+            });
+        }
+
+        // Category Selection Activation Logic Configuration Pipeline Intercept Hooks
+        document.querySelectorAll("#category-chips-row .chip").forEach(chip => {
+            chip.addEventListener("click", (e) => {
+                document.querySelectorAll("#category-chips-row .chip").forEach(c => c.classList.remove("active"));
+                e.target.classList.add("active");
+                activeCategoryFilter = e.target.getAttribute("data-cat");
+                executeGridSearchFilteringEngine(document.getElementById("search-bar").value);
+            });
+        });
+
+        // 4. LOAD APPS ENGINE LOOP CONFIGURATION METHOD OVERRIDE
+        function loadAppsEngineLoop() {
+            // Render basic skeleton animations placeholder elements before resolution binding frame
+            appGrid.innerHTML = `<div class="skeleton-icon"></div><div class="skeleton-icon"></div><div class="skeleton-icon"></div>`;
+            
+            const appsRef = ref(db, 'apps');
+            onValue(appsRef, (snapshot) => {
+                appGrid.innerHTML = ''; 
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    let appInstancesArray = [];
+
+                    for (const id in data) {
+                        const item = data[id];
+                        item.id = id;
+                        appInstancesArray.push(item);
+                        
+                        // Structural execution guard checking temporal publication restrictions matrix
+                        const now = Date.now();
+                        if (item.scheduledPublish && new Date(item.scheduledPublish).getTime() > now) continue;
+                        if (item.expiryDate && new Date(item.expiryDate).getTime() < now) continue;
+
+                        createUnifiedAppIconViewElement(id, item);
+                    }
+                    
+                    // Render Context Dependent Layout Shelves Segments Engine Execution Tasks
+                    generateLeaderboardDisplayShelf(appInstancesArray);
+                    renderAISmartRecommendationsShelf(appInstancesArray);
+                    renderRecentlyOpenedShelfViewElements();
+                }
+                executeGridSearchFilteringEngine(document.getElementById('search-bar').value);
+            });
+        }
+
+        // High-Performance Execution Mapping Factory Struct Engine Construct Creation Module
+        function createUnifiedAppIconViewElement(id, data, targetContainer = appGrid) {
+            const div = document.createElement('div');
+            div.className = 'app-icon';
+            div.setAttribute('data-name', (data.name || '').toLowerCase());
+            div.setAttribute('data-cat', data.category || 'Tools');
+            div.setAttribute('data-id', id);
+            div.style.position = 'relative';
+
+            // Implement Image Compression / Lazy Performance Optimization Mechanics[span_5](start_span)[span_5](end_span)
+            div.innerHTML = `
+                <div class="live-badge">LIVE</div>
+                <img src="${data.photo}" class="app-img" loading="lazy" alt="app icon">
+                <span class="app-name">${data.name}</span>
+            `;
+
+            // Drag and Drop Interactivity Dynamic Handlers Assignment Strategy Block
+            div.draggable = true;
+            div.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); });
+            
+            div.addEventListener('click', () => {
+                if (isEditMode) { openEditModal(id, data); } 
+                else {
+                    trackRecentlyOpenedAppHistoryState(id);
+                    incrementStat(id, 'views'); 
+                    openNoticeViewer(data, id); 
+                }
+            });
+
+            // 📌 Unlimited Pin Execution Mapping Block Adjustment Setup Engine Integration Intercept
+            let pinnedApps = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+            if (pinnedApps.includes(id)) {
+                div.style.order = '-1';
+                div.style.boxShadow = '0 0 15px rgba(245, 183, 0, 0.4)';
+                div.style.borderColor = '#f5b700';
+            }
+
+            // Long Press Multi-Engine Utility Attachment Mapping Trigger Protocol
+            let longPressTimer;
+            div.addEventListener('touchstart', () => {
+                longPressTimer = setTimeout(() => {
+                    togglePinElementStateMemoryMapping(id);
+                }, 1500);
+            }, {passive: true});
+            div.addEventListener('touchend', () => clearTimeout(longPressTimer));
+
+            targetContainer.appendChild(div);
+        }
+
+        // Unlimited Pin Inversion Operations Memory Mapping Routine Block
+        function togglePinElementStateMemoryMapping(id) {
+            let currentPins = JSON.parse(localStorage.getItem('t3_pinned_apps') || '[]');
+            if (currentPins.includes(id)) {
+                currentPins = currentPins.filter(x => x !== id);
+                alert("App configuration target unpinned successfully from desktop matrix.");
+            } else {
+                currentPins.push(id); // Unlimited Pin Constraint Cleared
+                alert("Target application structure pinned to unlimited header visibility layer layout.");
+            }
+            localStorage.setItem('t3_pinned_apps', JSON.stringify(currentPins));
+            loadAppsEngineLoop();
+        }
+
+        // 🕒 Tracks Local Opened Interaction Storage Nodes
+        function trackRecentlyOpenedAppHistoryState(id) {
+            let history = JSON.parse(localStorage.getItem('t3_history_timeline') || '[]');
+            history = history.filter(x => x !== id);
+            history.unshift(id);
+            if(history.length > 5) history.pop();
+            localStorage.setItem('t3_history_timeline', JSON.stringify(history));
+        }
+
+        function renderRecentlyOpenedShelfViewElements() {
+            const shelf = document.getElementById("recent-apps-row");
+            shelf.innerHTML = "";
+            let history = JSON.parse(localStorage.getItem('t3_history_timeline') || '[]');
+            
+            if(history.length === 0) { shelf.innerHTML = "<p style='font-size:0.8rem; opacity:0.5; padding:0 25px;'>No history tracked in target database frame.</p>"; return; }
+
+            history.forEach(id => {
+                get(ref(db, 'apps/' + id)).then((snap) => {
+                    if(snap.exists()) { createUnifiedAppIconViewElement(id, snap.val(), shelf); }
+                });
+            });
+        }
+
+        // 🤖 AI Optimization Target Recommendation Logic Module Implementation
+        function renderAISmartRecommendationsShelf(allApps) {
+            const shelf = document.getElementById("ai-recommendation-row");
+            shelf.innerHTML = "";
+            
+            // Core Predictive Extraction Algorithm: Pull most interacted category types matching criteria
+            let history = JSON.parse(localStorage.getItem('t3_history_timeline') || '[]');
+            if(history.length === 0) {
+                // Return basic baseline parameters if memory state completely empty array
+                let randomizedSelectionSlice = allApps.slice(0, 3);
+                randomizedSelectionSlice.forEach(item => createUnifiedAppIconViewElement(item.id, item, shelf));
+                return;
+            }
+
+            // Simple predictive matching logic pass vector
+            let sampleId = history[0];
+            let matchedApp = allApps.find(x => x.id === sampleId);
+            if(matchedApp) {
+                let strategyRecommendations = allApps.filter(x => x.category === matchedApp.category && x.id !== sampleId);
+                if(strategyRecommendations.length === 0) strategyRecommendations = allApps.slice(0, 2);
+                strategyRecommendations.slice(0, 3).forEach(item => createUnifiedAppIconViewElement(item.id, item, shelf));
+            }
+        }
+
+        // 🏆 Popular apps Leaderboard Dynamic Compute Sorting Block Mapping Engine
+        function generateLeaderboardDisplayShelf(allApps) {
+            const shelf = document.getElementById("leaderboard-apps-row");
+            shelf.innerHTML = "";
+            let sortedEvaluationArray = [...allApps].sort((a, b) => (b.views || 0) - (a.views || 0));
+            sortedEvaluationArray.slice(0, 4).forEach(item => createUnifiedAppIconViewElement(item.id, item, shelf));
+        }
+
+        // 7. CONTEXT VIEWER INTEGRATED MODIFIED MULTI-ELEMENT ENGINE FRAME
+        const noticeViewerModal = document.getElementById('notice-viewer-modal');
+        const viewerContent = document.getElementById('viewer-content');
+        const viewerLinkBtn = document.getElementById('viewer-link-btn');
+
+        function openNoticeViewer(data, id) {
+            activeViewerApplicationContextID = id;
+            incrementStat(id, 'reads'); // Atomic execution read tracking increment counter update step
+
+            document.getElementById('viewer-title').innerText = data.name || "Notice";
+            viewerContent.innerHTML = data.notice || "<p>No special content instructions provided inside target module block.</p>";
+            
+            // Evaluate Favorite Icon Display State Configuration Intercept Map Block
+            let currentFavorites = JSON.parse(localStorage.getItem('t3_favorites_pool') || '[]');
+            document.getElementById("btn-fav-toggle").innerText = currentFavorites.includes(id) ? "❤️" : "🤍";
+
+            // Process Rich Embedded Media Content Injector Engines
+            const videoViewport = document.getElementById("viewer-video-container");
+            videoViewport.innerHTML = "";
+            if (data.videoUrl) {
+                videoViewport.innerHTML = `<iframe class="media-notice" src="${data.videoUrl}" height="240" frameborder="0" allowfullscreen></iframe>`;
+            }
+
+            const audioViewport = document.getElementById("viewer-audio-container");
+            audioViewport.innerHTML = "";
+            if (data.audioUrl) {
+                audioViewport.innerHTML = `<audio controls class="media-notice" style="background:#fff;"><source src="${data.audioUrl}" type="audio/mp3"></audio>`;
+            }
+
+            const pdfViewport = document.getElementById("viewer-pdf-container");
+            pdfViewport.innerHTML = "";
+            if (data.pdfUrl) {
+                pdfViewport.innerHTML = `<iframe src="${data.pdfUrl}" style="width:100%; height:300px; border-radius:8px; margin-top:10px;"></iframe>`;
+            }
+
+            // Sync dynamic view metrics on target template layer structures
+            document.getElementById("lbl-view-count").innerText = `👀 Views: ${data.views || 0}`;
+            document.getElementById("lbl-share-count").innerText = `🤝 Shares: ${data.shares || 0}`;
+
+            // Initialize Comments Display Target Engine Data Core Loop
+            syncLiveDiscussionCommentsPipeline(id);
+
+            viewerLinkBtn.onclick = () => {
+                incrementStat(id, 'clicks'); 
+                window.open(data.link, '_blank');
+            };
+            
+            noticeViewerModal.classList.remove('hidden');
+        }
+
+        // Bookmark Favorite Application State Vector Control Processor Engine
+        document.getElementById("btn-fav-toggle").addEventListener("click", () => {
+            if(!activeViewerApplicationContextID) return;
+            let currentFavorites = JSON.parse(localStorage.getItem('t3_favorites_pool') || '[]');
+            if (currentFavorites.includes(activeViewerApplicationContextID)) {
+                currentFavorites = currentFavorites.filter(x => x !== activeViewerApplicationContextID);
+                document.getElementById("btn-fav-toggle").innerText = "🤍";
+            } else {
+                currentFavorites.push(activeViewerApplicationContextID);
+                document.getElementById("btn-fav-toggle").innerText = "❤️";
+            }
+            localStorage.setItem('t3_favorites_pool', JSON.stringify(currentFavorites));
+        });
+
+        // Online Resource QR Engine Code Generation Share Module Blueprint Implementation
+        document.getElementById("btn-qr-share-gen").addEventListener("click", () => {
+            if(!activeViewerApplicationContextID) return;
+            incrementStat(activeViewerApplicationContextID, 'shares');
+            const targetSpace = document.getElementById("qr-code-injection-space");
+            const shareEndpointUrl = `https://t3reeworld.vercel.app/app/${activeViewerApplicationContextID}`;
+            targetSpace.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareEndpointUrl)}" alt="QR Share Code Link Grid">`;
+        });
+
+        // Realtime Discussion Thread Stream Processor Data Mapping Hook Block Loop
+        function syncLiveDiscussionCommentsPipeline(appId) {
+            const commentsNodeRef = ref(db, `apps/${appId}/comments_thread`);
+            onValue(commentsNodeRef, (snapshot) => {
+                const targetArea = document.getElementById("comments-render-loop");
+                targetArea.innerHTML = "";
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    for(const key in data) {
+                        const c = data[key];
+                        const cBox = document.createElement("div");
+                        cBox.className = "comment-box";
+                        cBox.innerHTML = `<div><strong>${c.author || 'Anonymous User'}</strong>: ${c.text}</div>`;
+                        targetArea.appendChild(cBox);
+                    }
+                } else {
+                    targetArea.innerHTML = "<p style='font-size:0.8rem; opacity:0.4;'>No dialogue records matching criteria established.</p>";
+                }
+            });
+        }
+
+        document.getElementById("btn-post-comment").addEventListener("click", () => {
+            if(!activeViewerApplicationContextID) return;
+            const inputField = document.getElementById("comment-input-field");
+            if (!inputField.value.trim()) return;
+            
+            const authorSignatureName = localUserIdentityToken ? localUserIdentityToken.email : "Anonymous Engine Entity";
+            const commentRef = ref(db, `apps/${activeViewerApplicationContextID}/comments_thread`);
+            
+            push(commentRef, {
+                author: authorSignatureName,
+                text: inputField.value.trim(),
+                timestamp: Date.now()
+            }).then(() => { inputField.value = ""; });
+        });
+
+        // 5-Star Calculation Metric Score Engine Processor Mechanics Control Setup Hook
+        document.querySelectorAll("#star-rating-row span").forEach(star => {
+            star.addEventListener("click", (e) => {
+                const ratingValueScore = parseInt(e.target.getAttribute("data-rating"));
+                if(!activeViewerApplicationContextID) return;
+
+                set(ref(db, `apps/${activeViewerApplicationContextID}/ratings_distribution/${localUserIdentityToken?.uid || 'anonymous_node'}`), ratingValueScore)
+                    .then(() => {
+                        alert(`Rating score tier tracking submission confirmed: ${ratingValueScore} Stars Matrix Logged.`);
+                        // Render visually active element states matching configuration parameters
+                        document.querySelectorAll("#star-rating-row span").forEach((s, idx) => {
+                            if(idx < ratingValueScore) s.classList.add("active");
+                            else s.classList.remove("active");
+                        });
+                    });
+            });
+        });
+
+        document.getElementById('btn-close-viewer').addEventListener('click', () => {
+            noticeViewerModal.classList.add('hidden');
+            document.getElementById("qr-code-injection-space").innerHTML = "";
+        });
+
+        // 3. EDIT MODE SWITCH TOGGLE OVERRIDE HOOK
+        document.getElementById('btn-edit').addEventListener('click', (e) => {
+            isEditMode = !isEditMode;
+            e.target.classList.toggle('edit-active');
+            document.getElementById("add-btn").classList.toggle("hidden");
+            if(isEditMode) { alert("Edit Admin Mode Enabled: Select active target elements parameters configuration frame."); }
+            loadSliderEngineCoreLogic(); 
+        });
+
+        // Drag-Drop Ordering Integration Deployment Interceptor Map Configuration Targets Hooks
+        appGrid.addEventListener('dragover', (e) => { e.preventDefault(); });
+        appGrid.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggingAppId = e.dataTransfer.getData('text/plain');
+            dispatchAuditLogEntry("Admin Manager", `Reorder sequence trigger target initialized tracking node position displacement map: ${draggingAppId}`);
+        });
+
+        // 📈 Admin Analytical Visual Metrics Processing Framework Implementation Module
+        document.getElementById("btn-dashboard-view").addEventListener("click", () => {
+            document.getElementById("dashboard-modal").classList.remove("hidden");
+            renderSystemAnalyticsOverviewEngineChart();
+        });
+
+        function renderSystemAnalyticsOverviewEngineChart() {
+            get(ref(db, 'apps')).then((snapshot) => {
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    let labelsList = [];
+                    let ctrDatasetValues = [];
+                    let accumulatedTotalViewsCountSum = 0;
+                    let accumulatedTotalClicksCountSum = 0;
+
+                    for(const id in data) {
+                        const app = data[id];
+                        labelsList.push(app.name || 'Unknown Channel Name Context');
+                        
+                        let v = app.views || 0;
+                        let c = app.clicks || 0;
+                        let ctrCalculatedValue = v > 0 ? ((c / v) * 100).toFixed(1) : 0;
+                        
+                        ctrDatasetValues.push(ctrCalculatedValue);
+                        accumulatedTotalViewsCountSum += v;
+                        accumulatedTotalClicksCountSum += c;
+                    }
+
+                    document.getElementById("stat-total-views").innerText = accumulatedTotalViewsCountSum;
+                    document.getElementById("stat-total-clicks").innerText = accumulatedTotalClicksCountSum;
+                    document.getElementById("stat-avg-ctr").innerText = (accumulatedTotalViewsCountSum > 0 ? ((accumulatedTotalClicksCountSum / accumulatedTotalViewsCountSum) * 100).toFixed(1) : 0) + "%";
+
+                    // Chart Builder Logic Instance Initialization Context Binding Engine
+                    const ctx = document.getElementById('ctrChart').getContext('2d');
+                    if(dashboardChartInstance) dashboardChartInstance.destroy();
+                    dashboardChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labelsList,
+                            datasets: [{
+                                label: 'Click Through Ratio Performance Index Percentage Metrics (CTR %)',
+                                data: ctrDatasetValues,
+                                backgroundColor: '#4361ee',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } } }
+                    });
+                }
+            });
+
+            // Populate system logs display block window segment matrix contents
+            get(ref(db, 'admin_activity_log')).then((snap) => {
+                const terminal = document.getElementById("admin-log-terminal");
+                terminal.innerHTML = "";
+                if(snap.exists()) {
+                    const logs = snap.val();
+                    Object.keys(logs).reverse().forEach(k => {
+                        terminal.innerHTML += `<div>[${new Date(logs[k].timestamp).toLocaleTimeString()}] ${logs[k].actor}: ${logs[k].intent}</div>`;
+                    });
+                }
+            });
+        }
+
+        // 🚫 High performance link verification utility checker framework logic algorithm pipeline
+        document.getElementById("btn-link-checker").addEventListener("click", () => {
+            alert("Initiating comprehensive validation route sequences across system integration points...");
+            get(ref(db, 'apps')).then((snap) => {
+                if(snap.exists()){
+                    const data = snap.val();
+                    for(const id in data) {
+                        const urlTargetDestination = data[id].link;
+                        fetch(urlTargetDestination, { mode: 'no-cors' }).then(() => {
+                            console.log(`URL Route sequence matching channel signature verification normal: ${urlTargetDestination}`);
+                        }).catch(() => {
+                            dispatchAuditLogEntry("Automated Link Checker Engine Core", `Link integrity warning anomaly discovered on target channel destination point: ${data[id].name}`);
+                        });
+                    }
+                    alert("Integrity verification scan loop finished processing check context console logs.");
+                }
+            });
+        });
+
+        // Auto Save Draft System Hook Implementation Engine Logic Block Intercept
+        document.getElementById("notice-editor").addEventListener("input", (e) => {
+            localStorage.setItem("t3_notice_editor_draft_autosave_cache", e.target.innerHTML);
+        });
+        window.addEventListener("load", () => {
+            const cachedDraftNoticeContentData = localStorage.getItem("t3_notice_editor_draft_autosave_cache");
+            if(cachedDraftNoticeContentData) document.getElementById("notice-editor").innerHTML = cachedDraftNoticeContentData;
+        });
+
+        // 📤 Comprehensive Structural JSON DB Backup and Deployment Import Logic Implementations
+        document.getElementById("btn-export-db").addEventListener("click", () => {
+            get(ref(db, 'apps')).then((snap) => {
+                const clearTextJsonStringData = JSON.stringify(snap.val() || {}, null, 2);
+                const spatialBlobStreamDataEntity = new Blob([clearTextJsonStringData], {type: "application/json"});
+                const referenceUrlDownloadTargetString = URL.createObjectURL(spatialBlobStreamDataEntity);
+                const mockAnchorNavigationClickElement = document.createElement("a");
+                mockAnchorNavigationClickElement.href = referenceUrlDownloadTargetString;
+                mockAnchorNavigationClickElement.download = "T3_SystemApps_BackupDataset.json";
+                mockAnchorNavigationClickElement.click();
+            });
+        });
+
+        document.getElementById("import-db-input").addEventListener("change", (e) => {
+            const fileTargetEntity = e.target.files[0];
+            if(fileTargetEntity) {
+                const readerInstance = new FileReader();
+                readerInstance.onload = (event) => {
+                    try {
+                        const parsedParsedDatasetMatrix = JSON.parse(event.target.result);
+                        set(ref(db, 'apps'), parsedParsedDatasetMatrix).then(() => {
+                            alert("Database state overwriting and expansion structure mapping completed execution successfully.");
+                            loadAppsEngineLoop();
+                        });
+                    } catch(err) { alert("JSON structural data corruption exception detected on parsing processing path execution block."); }
+                };
+                readerInstance.readAsText(fileTargetEntity);
+            }
+        });
+
+        // 5. ADD / EDIT APP MODAL (Step 1 Setup Realization Mechanics Layout Interface Maps)[span_6](start_span)[span_6](end_span)
+        const appModal = document.getElementById('app-modal');
+        const noticeBuilderModal = document.getElementById('notice-builder-modal');
+        const noticeEditor = document.getElementById('notice-editor');
+        
+        document.getElementById('add-btn').addEventListener('click', () => {
+            document.getElementById('modal-title').innerText = "Add New Link";
+            document.getElementById('app-id').value = "";
+            document.getElementById('app-name').value = "";
+            document.getElementById('app-link').value = "";
+            document.getElementById('app-photo').value = "";
+            document.getElementById('preview-img').style.display = "none";
+            document.getElementById('btn-delete').classList.add('hidden');
+            base64Image = "";
+            tempAppData = {};
+            appModal.classList.remove('hidden');
+        });
+
+        function openEditModal(id, data) {
+            document.getElementById('modal-title').innerText = "Edit Link";
+            document.getElementById('app-id').value = id;
+            document.getElementById('app-name').value = data.name;
+            document.getElementById('app-link').value = data.link;
+            document.getElementById('app-category-select').value = data.category || "Tools";
+            
+            const preview = document.getElementById('preview-img');
+            preview.src = data.photo;
+            preview.style.display = "block";
+            base64Image = data.photo; 
+            
+            tempAppData = { 
+                notice: data.notice || "",
+                videoUrl: data.videoUrl || "",
+                audioUrl: data.audioUrl || "",
+                pdfUrl: data.pdfUrl || "",
+                scheduledPublish: data.scheduledPublish || "",
+                expiryDate: data.expiryDate || ""
+            };
+            
+            document.getElementById('btn-delete').classList.remove('hidden');
+            appModal.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-cancel-app').addEventListener('click', () => appModal.classList.add('hidden'));
+
+        document.getElementById('app-photo').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    base64Image = event.target.result;
+                    const preview = document.getElementById('preview-img');
+                    preview.src = base64Image;
+                    preview.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('btn-save-app').addEventListener('click', () => {
+            const id = document.getElementById('app-id').value;
+            const name = document.getElementById('app-name').value;
+            const link = document.getElementById('app-link').value;
+            const selectedCategoryValue = document.getElementById('app-category-select').value;
+
+            if (!name || !link || !base64Image) {
+                alert("Please provide name, final link, and photo!");
+                return;
+            }
+
+            tempAppData.id = id;
+            tempAppData.name = name;
+            tempAppData.link = link;
+            tempAppData.photo = base64Image;
+            tempAppData.category = selectedCategoryValue;
+
+            appModal.classList.add('hidden');
+            
+            noticeEditor.innerHTML = tempAppData.notice || "";
+            document.getElementById("notice-video-url").value = tempAppData.videoUrl || "";
+            document.getElementById("notice-audio-url").value = tempAppData.audioUrl || "";
+            document.getElementById("notice-pdf-url").value = tempAppData.pdfUrl || "";
+            document.getElementById("notice-schedule-date").value = tempAppData.scheduledPublish || "";
+            document.getElementById("notice-expiry-date").value = tempAppData.expiryDate || "";
+
+            noticeBuilderModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            const id = document.getElementById('app-id').value;
+            if (confirm("Are you sure you want to delete this icon?")) {
+                remove(ref(db, 'apps/' + id)).then(() => {
+                    dispatchAuditLogEntry("Admin", `Deleted database object container entity record matching reference structural signature element: ${id}`);
+                    appModal.classList.add('hidden');
+                });
+            }
+        });
+
+        // 6. NOTICE BUILDER MODAL LOGIC (Step 2 Config Settings Framework Target Bindings)[span_7](start_span)[span_7](end_span)
+        function insertAtCursor(html) {
+            noticeEditor.focus();
+            if(!document.execCommand('insertHTML', false, html)) { noticeEditor.innerHTML += html; }
+        }
+
+        document.getElementById('btn-cancel-notice').addEventListener('click', () => {
+            noticeBuilderModal.classList.add('hidden');
+            appModal.classList.remove('hidden'); 
+        });
+
+        document.getElementById('btn-notice-img').addEventListener('click', () => { document.getElementById('notice-img-input').click(); });
+        document.getElementById('notice-img-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const b64 = event.target.result;
+                    insertAtCursor(`<div class="notice-img-container" contenteditable="false"><img src="${b64}" alt="Notice Image"><button class="del-img-btn" onclick="this.parentElement.remove()">&times;</button></div>`);
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = ""; 
+        });
+
+        document.getElementById('btn-notice-link').addEventListener('click', () => {
+            const url = prompt("Enter the URL to insert in notice:");
+            if (url) { insertAtCursor(`<a href="${url}" target="_blank">${url}</a>`); }
+        });
+
+        document.getElementById('btn-save-final').addEventListener('click', () => {
+            tempAppData.notice = noticeEditor.innerHTML;
+            tempAppData.videoUrl = document.getElementById("notice-video-url").value;
+            tempAppData.audioUrl = document.getElementById("notice-audio-url").value;
+            tempAppData.pdfUrl = document.getElementById("notice-pdf-url").value;
+            tempAppData.scheduledPublish = document.getElementById("notice-schedule-date").value;
+            tempAppData.expiryDate = document.getElementById("notice-expiry-date").value;
+
+            const finalData = {
+                name: tempAppData.name,
+                link: tempAppData.link,
+                photo: tempAppData.photo,
+                category: tempAppData.category,
+                notice: tempAppData.notice,
+                videoUrl: tempAppData.videoUrl,
+                audioUrl: tempAppData.audioUrl,
+                pdfUrl: tempAppData.pdfUrl,
+                scheduledPublish: tempAppData.scheduledPublish,
+                expiryDate: tempAppData.expiryDate
+            };
+
+            if (tempAppData.id) {
+                update(ref(db, 'apps/' + tempAppData.id), finalData).then(() => {
+                    dispatchAuditLogEntry("Admin Core", `Updated parameters data payload model mapping inside target framework elements: ${tempAppData.name}`);
+                });
+            } else {
+                finalData.views = 0; 
+                finalData.clicks = 0; 
+                finalData.shares = 0;
+                finalData.reads = 0;
+                push(ref(db, 'apps'), finalData).then(() => {
+                    dispatchAuditLogEntry("Admin Core", `Created and dispatched new system channel mapping block resource structure context target element item: ${finalData.name}`);
+                });
+            }
+            
+            // Clear down current auto draft save state cache parameters upon final commit execution
+            localStorage.removeItem("t3_notice_editor_draft_autosave_cache");
+            noticeBuilderModal.classList.add('hidden');
+            tempAppData = {}; 
+        });
+
+        // 8. SETTINGS PARAMETERS CONTEXT HANDLERS
+        const settingsModal = document.getElementById('settings-modal');
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+        document.getElementById('btn-cancel-settings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        document.getElementById('btn-save-settings').addEventListener('click', () => {
+            const email = document.getElementById('set-email').value;
+            const oldPass = document.getElementById('set-old-pass').value;
+            const newPass = document.getElementById('set-new-pass').value;
+
+            if (email !== "ambujewns404@gmail.com") { alert("Unauthorized Email!"); return; }
+            if (oldPass !== currentPassword) { alert("Old password incorrect!"); return; }
+            if (newPass.length !== 8) { alert("New password must be exactly 8 digits!"); return; }
+
+            set(ref(db, 'admin/password'), newPass).then(() => {
+                currentPassword = newPass;
+                alert("Password changed successfully!");
+                settingsModal.classList.add('hidden');
+            });
+        });
+
+        // 9. NATIVE CAROUSEL SLIDER ENGINE CONTROLLER ARCHITECTURE PIPELINE[span_8](start_span)[span_8](end_span)
+        let sliderDataCache = {};
+        let slideInterval;
+        let slideDirection = 1;
+        let currentSlideSlot = -1;
+
+        function loadSliderEngineCoreLogic() {
+            const track = document.getElementById('slider-track');
+            if (!track) return;
+            track.innerHTML = '';
+            
+            let hasImages = false;
+            for (let i = 1; i <= 5; i++) { if (sliderDataCache['slide' + i]) hasImages = true; }
+            if (!isEditMode && !hasImages) { document.getElementById('slider-container').style.display = 'none'; return; } 
+            else { document.getElementById('slider-container').style.display = 'block'; }
+
+            for(let i = 1; i <= 5; i++) {
+                const b64 = sliderDataCache['slide'+i];
+                if (!b64 && !isEditMode) continue; 
+
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                slide.innerHTML = b64 ? `<img src="${b64}">` : `<div style="color:#aaa; font-weight:bold;">Slot Slide Element Slot Field ${i} Empty</div>`;
+
+                if (isEditMode) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'slide-edit-overlay';
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'btn btn-primary';
+                    upBtn.innerText = 'Upload Image Slide File';
+                    upBtn.onclick = (e) => { e.stopPropagation(); currentSlideSlot = i; document.getElementById('slider-img-input').click(); };
+                    overlay.appendChild(upBtn);
+                    slide.appendChild(overlay);
+                }
+                track.appendChild(slide);
+            }
+            startAutoCarouselScrollLoop();
+        }
+
+        const sliderRef = ref(db, 'slider');
+        onValue(sliderRef, (snapshot) => {
+            sliderDataCache = snapshot.exists() ? snapshot.val() : {};
+            loadSliderEngineCoreLogic();
+        });
+
+        document.getElementById('slider-img-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && currentSlideSlot !== -1) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    set(ref(db, 'slider/slide' + currentSlideSlot), event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function startAutoCarouselScrollLoop() {
+            clearInterval(slideInterval);
+            if (isEditMode) return; 
+            slideInterval = setInterval(() => {
+                const track = document.getElementById('slider-track');
+                if (!track) return;
+                const maxScroll = track.scrollWidth - track.clientWidth;
+                if (maxScroll <= 0) return; 
+                if (track.scrollLeft >= maxScroll - 10) { slideDirection = -1; } 
+                else if (track.scrollLeft <= 10) { slideDirection = 1; }
+                track.scrollBy({ left: track.clientWidth * slideDirection, behavior: 'smooth' });
+            }, 3000); 
+        }
+
+        // 11. NOTIFICATIONS FEATURE INTEGRATION LAYER EXECUTION PIPELINE
+        const btnNotification = document.getElementById('btn-notification');
+        const notifBadge = document.getElementById('notif-badge');
+        const notificationModal = document.getElementById('notification-modal');
+        const btnCloseNotification = document.getElementById('btn-close-notification');
+        const notifList = document.getElementById('notif-list');
+
+        let seenTimestamp = parseInt(localStorage.getItem('t3_last_seen_notif') || '0');
+        const notifRef = ref(db, 'system_notifications');
+        onValue(notifRef, (snapshot) => {
+            notifList.innerHTML = '';
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                Object.keys(data).forEach(key => {
+                    const div = document.createElement('div');
+                    div.style.padding = '10px'; div.style.background = 'rgba(0,0,0,0.02)'; div.style.borderRadius = '8px';
+                    div.innerHTML = `<p style="margin:0;">${data[key].text}</p>`;
+                    notifList.appendChild(div);
+                });
+                notifBadge.classList.remove('hidden');
+            }
+        });
+
+        btnNotification.addEventListener('click', () => { notificationModal.classList.remove('hidden'); notifBadge.classList.add('hidden'); });
+        btnCloseNotification.addEventListener('click', () => { notificationModal.classList.add('hidden'); });
+
+        // Hidden Administration Easter Egg Interception Mechanism Hook Mapping Framework
+        const headerLogo = document.querySelector('.header-left img');
+        if (headerLogo) {
+            let tapCounterIncrementValue = 0;
+            headerLogo.addEventListener('click', () => {
+                tapCounterIncrementValue++;
+                if (tapCounterIncrementValue === 5) {
+                    document.getElementById("btn-edit").classList.remove("hidden");
+                    document.getElementById("btn-settings").classList.remove("hidden");
+                    alert("Elevated Administration Component Mapping Visibility Activated Successfully.");
+                    tapCounterIncrementValue = 0;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
